@@ -7,7 +7,7 @@ This repository provides a **boilerplate setup** for building game applications.
 
 1. **Use the Boilerplate Only**  
    - All games must be built **inside the provided boilerplate code**.  
-   - Do not create separate projects or move core logic outside the boilerplate.
+   - Do not create separate projects/files or move core logic outside the boilerplate.
 
 2. **Code Quality Before Pushing**  
    - Ensure there are **no type errors, runtime errors, or bugs** in your game before pushing.  
