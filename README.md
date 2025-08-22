@@ -12,6 +12,7 @@ This repository provides a **boilerplate setup** for building game applications.
 2. **Code Quality Before Pushing**  
    - Ensure there are **no type errors, runtime errors, or bugs** in your game before pushing.  
    - Run the project locally and test your changes thoroughly.
+   - Each file should not have more than max of 500-700 lines.
 
 3. **Questions Array Format**  
    - The `questions` array **must be stored in the format provided** in the main game rendering file.  
