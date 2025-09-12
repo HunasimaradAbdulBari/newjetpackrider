@@ -5,7 +5,13 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    // Set a 5-second timeout for the loader
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 5000);
+
+    // Cleanup timer on component unmount
+    return () => clearTimeout(timer);
   }, []);
 
   const handleGameClick = useCallback(() => {
@@ -18,135 +24,388 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-white">Loading...</p>
+          <style jsx>{`
+            .pencil {
+              display: block;
+              width: 10em;
+              height: 10em;
+            }
+            .pencil__body1,
+            .pencil__body2,
+            .pencil__body3,
+            .pencil__eraser,
+            .pencil__eraser-skew,
+            .pencil__point,
+            .pencil__rotate,
+            .pencil__stroke {
+              animation-duration: 3s;
+              animation-timing-function: linear;
+              animation-iteration-count: infinite;
+            }
+            .pencil__body1,
+            .pencil__body2,
+            .pencil__body3 {
+              transform: rotate(-90deg);
+            }
+            .pencil__body1 {
+              animation-name: pencilBody1;
+            }
+            .pencil__body2 {
+              animation-name: pencilBody2;
+            }
+            .pencil__body3 {
+              animation-name: pencilBody3;
+            }
+            .pencil__eraser {
+              animation-name: pencilEraser;
+              transform: rotate(-90deg) translate(49px,0);
+            }
+            .pencil__eraser-skew {
+              animation-name: pencilEraserSkew;
+              animation-timing-function: ease-in-out;
+            }
+            .pencil__point {
+              animation-name: pencilPoint;
+              transform: rotate(-90deg) translate(49px,-30px);
+            }
+            .pencil__rotate {
+              animation-name: pencilRotate;
+            }
+            .pencil__stroke {
+              animation-name: pencilStroke;
+              transform: translate(100px,100px) rotate(-113deg);
+            }
+            @keyframes pencilBody1 {
+              from,
+              to {
+                stroke-dashoffset: 351.86;
+                transform: rotate(-90deg);
+              }
+              50% {
+                stroke-dashoffset: 150.8;
+                transform: rotate(-225deg);
+              }
+            }
+            @keyframes pencilBody2 {
+              from,
+              to {
+                stroke-dashoffset: 406.84;
+                transform: rotate(-90deg);
+              }
+              50% {
+                stroke-dashoffset: 174.36;
+                transform: rotate(-225deg);
+              }
+            }
+            @keyframes pencilBody3 {
+              from,
+              to {
+                stroke-dashoffset: 296.88;
+                transform: rotate(-90deg);
+              }
+              50% {
+                stroke-dashoffset: 127.23;
+                transform: rotate(-225deg);
+              }
+            }
+            @keyframes pencilEraser {
+              from,
+              to {
+                transform: rotate(-45deg) translate(49px,0);
+              }
+              50% {
+                transform: rotate(0deg) translate(49px,0);
+              }
+            }
+            @keyframes pencilEraserSkew {
+              from,
+              32.5%,
+              67.5%,
+              to {
+                transform: skewX(0);
+              }
+              35%,
+              65% {
+                transform: skewX(-4deg);
+              }
+              37.5%, 
+              62.5% {
+                transform: skewX(8deg);
+              }
+              40%,
+              45%,
+              50%,
+              55%,
+              60% {
+                transform: skewX(-15deg);
+              }
+              42.5%,
+              47.5%,
+              52.5%,
+              57.5% {
+                transform: skewX(15deg);
+              }
+            }
+            @keyframes pencilPoint {
+              from,
+              to {
+                transform: rotate(-90deg) translate(49px,-30px);
+              }
+              50% {
+                transform: rotate(-225deg) translate(49px,-30px);
+              }
+            }
+            @keyframes pencilRotate {
+              from {
+                transform: translate(100px,100px) rotate(0);
+              }
+              to {
+                transform: translate(100px,100px) rotate(720deg);
+              }
+            }
+            @keyframes pencilStroke {
+              from {
+                stroke-dashoffset: 439.82;
+                transform: translate(100px,100px) rotate(-113deg);
+              }
+              50% {
+                stroke-dashoffset: 164.93;
+                transform: translate(100px,100px) rotate(-113deg);
+              }
+              75%,
+              to {
+                stroke-dashoffset: 439.82;
+                transform: translate(100px,100px) rotate(112deg);
+              }
+            }
+          `}</style>
+          
+          <svg xmlns="http://www.w3.org/2000/svg" height="200px" width="200px" viewBox="0 0 200 200" className="pencil">
+            <defs>
+              <clipPath id="pencil-eraser">
+                <rect height="30" width="30" ry="5" rx="5"></rect>
+              </clipPath>
+            </defs>
+            <circle 
+              transform="rotate(-113,100,100)" 
+              strokeLinecap="round" 
+              strokeDashoffset="439.82" 
+              strokeDasharray="439.82 439.82" 
+              strokeWidth="2" 
+              stroke="currentColor" 
+              fill="none" 
+              r="70" 
+              className="pencil__stroke"
+            ></circle>
+            <g transform="translate(100,100)" className="pencil__rotate">
+              <g fill="none">
+                <circle 
+                  transform="rotate(-90)" 
+                  strokeDashoffset="402" 
+                  strokeDasharray="402.12 402.12" 
+                  strokeWidth="30" 
+                  stroke="hsl(223,90%,50%)" 
+                  r="64" 
+                  className="pencil__body1"
+                ></circle>
+                <circle 
+                  transform="rotate(-90)" 
+                  strokeDashoffset="465" 
+                  strokeDasharray="464.96 464.96" 
+                  strokeWidth="10" 
+                  stroke="hsl(223,90%,60%)" 
+                  r="74" 
+                  className="pencil__body2"
+                ></circle>
+                <circle 
+                  transform="rotate(-90)" 
+                  strokeDashoffset="339" 
+                  strokeDasharray="339.29 339.29" 
+                  strokeWidth="10" 
+                  stroke="hsl(223,90%,40%)" 
+                  r="54" 
+                  className="pencil__body3"
+                ></circle>
+              </g>
+              <g transform="rotate(-90) translate(49,0)" className="pencil__eraser">
+                <g className="pencil__eraser-skew">
+                  <rect height="30" width="30" ry="5" rx="5" fill="hsl(223,90%,70%)"></rect>
+                  <rect clipPath="url(#pencil-eraser)" height="30" width="5" fill="hsl(223,90%,60%)"></rect>
+                  <rect height="20" width="30" fill="hsl(223,10%,90%)"></rect>
+                  <rect height="20" width="15" fill="hsl(223,10%,70%)"></rect>
+                  <rect height="20" width="5" fill="hsl(223,10%,80%)"></rect>
+                  <rect height="2" width="30" y="6" fill="hsla(223,10%,10%,0.2)"></rect>
+                  <rect height="2" width="30" y="13" fill="hsla(223,10%,10%,0.2)"></rect>
+                </g>
+              </g>
+              <g transform="rotate(-90) translate(49,-30)" className="pencil__point">
+                <polygon points="15 0,30 30,0 30" fill="hsl(33,90%,70%)"></polygon>
+                <polygon points="15 0,6 30,0 30" fill="hsl(33,90%,50%)"></polygon>
+                <polygon points="15 0,20 10,10 10" fill="hsl(223,10%,10%)"></polygon>
+              </g>
+            </g>
+          </svg>
+          
+          <p className="text-white mt-4">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-blue-500/10 rounded-full animate-pulse"></div>
-        <div className="absolute top-40 right-32 w-24 h-24 bg-purple-500/10 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute bottom-32 left-40 w-20 h-20 bg-pink-500/10 rounded-full animate-pulse" style={{animationDelay: '2s'}}></div>
-        <div className="absolute bottom-20 right-20 w-28 h-28 bg-green-500/10 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+    <>
+      <style jsx>{`
+        .button {
+          width: 140px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          gap: 10px;
+          padding: 0px 15px;
+          background-color: red;
+          border-radius: 10px;
+          border: none;
+          color: white;
+          position: relative;
+          cursor: pointer;
+          font-weight: 900;
+          transition-duration: 0.2s;
+          margin: 0 auto;
+        }
+
+        .game path {
+          color: white;
+        }
+
+        .button .arrow {
+          position: absolute;
+          right: 0;
+          padding: 0px 5px;
+          width: 30px;
+          height: 100%;
+          font-size: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .button:hover,
+        .button:focus {
+          background-color: black;
+          transition-duration: 0.2s;
+        }
+
+        .button:hover .arrow {
+          animation: slide-right 0.6s ease-out both;
+        }
+
+        @keyframes slide-right {
+          0% {
+            transform: translateX(-10px);
+            opacity: 0;
+          }
+          100% {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        .button:active {
+          transform: translate(1px, 1px);
+          transition-duration: 0.2s;
+        }
+      `}</style>
+
+      <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center p-4 overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-20 left-20 w-32 h-32 bg-blue-500/10 rounded-full animate-pulse"></div>
+          <div 
+            className="absolute top-40 right-32 w-24 h-24 bg-purple-500/10 rounded-full animate-pulse" 
+            style={{animationDelay: '1s'}}
+          ></div>
+          <div 
+            className="absolute bottom-32 left-40 w-20 h-20 bg-pink-500/10 rounded-full animate-pulse" 
+            style={{animationDelay: '2s'}}
+          ></div>
+          <div 
+            className="absolute bottom-20 right-20 w-28 h-28 bg-green-500/10 rounded-full animate-pulse" 
+            style={{animationDelay: '0.5s'}}
+          ></div>
+        </div>
+
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          {/* Main Hero Section */}
+          <div className="mb-12">
+            <h1 className="text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 mb-6 animate-pulse">
+              Jetpack Rider
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-300 mb-4 leading-relaxed">
+              Embark on an epic space adventure where knowledge is your fuel!
+            </p>
+          </div>
+
+          {/* How to Play Quick Guide */}
+          <div className="mb-16 text-left max-w-2xl mx-auto">
+            <h3 className="text-2xl font-semibold text-white mb-6 text-center">How to Play</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <span className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                  1
+                </span>
+                <div>
+                  <h4 className="font-semibold text-white">Launch Your Jetpack</h4>
+                  <p className="text-gray-300 text-sm">Use SPACEBAR (desktop) or tap (mobile) to fly up. Gravity pulls you down naturally.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <span className="flex-shrink-0 w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                  2
+                </span>
+                <div>
+                  <h4 className="font-semibold text-white">Dodge Obstacles</h4>
+                  <p className="text-gray-300 text-sm">Avoid the red obstacles. Each hit costs a life - you only have 3!</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <span className="flex-shrink-0 w-8 h-8 bg-pink-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                  3
+                </span>
+                <div>
+                  <h4 className="font-semibold text-white">Answer Questions</h4>
+                  <p className="text-gray-300 text-sm">When questions appear, fly through the correct answer. Each correct answer gives you 25 points!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Call to Action - Button below everything */}
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={handleGameClick}
+              className="button"
+            >
+              <svg 
+                viewBox="0 0 16 16" 
+                fill="currentColor" 
+                height="18" 
+                width="18" 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="game"
+              > 
+                <path d="M11.5 6.027a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0zm-1.5 1.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm2.5-.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0zm-1.5 1.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm-6.5-3h1v1h1v1h-1v1h-1v-1h-1v-1h1v-1z"></path> 
+                <path d="M3.051 3.26a.5.5 0 0 1 .354-.613l1.932-.518a.5.5 0 0 1 .62.39c.655-.079 1.35-.117 2.043-.117.72 0 1.443.041 2.12.126a.5.5 0 0 1 .622-.399l1.932.518a.5.5 0 0 1 .306.729c.14.09.266.19.373.297.408.408.78 1.05 1.095 1.772.32.733.599 1.591.805 2.466.206.875.34 1.78.364 2.606.024.816-.059 1.602-.328 2.21a1.42 1.42 0 0 1-1.445.83c-.636-.067-1.115-.394-1.513-.773-.245-.232-.496-.526-.739-.808-.126-.148-.25-.292-.368-.423-.728-.804-1.597-1.527-3.224-1.527-1.627 0-2.496.723-3.224 1.527-.119.131-.242.275-.368.423-.243.282-.494.575-.739.808-.398.38-.877.706-1.513.773a1.42 1.42 0 0 1-1.445-.83c-.27-.608-.352-1.395-.329-2.21.024-.826.16-1.73.365-2.606.206-.875.486-1.733.805-2.466.315-.722.687-1.364 1.094-1.772a2.34 2.34 0 0 1 .433-.335.504.504 0 0 1-.028-.079zm2.036.412c-.877.185-1.469.443-1.733.708-.276.276-.587.783-.885 1.465a13.748 13.748 0 0 0-.748 2.295 12.351 12.351 0 0 0-.339 2.406c-.022.755.062 1.368.243 1.776a.42.42 0 0 0 .426.24c.327-.034.61-.199.929-.502.212-.202.4-.423.615-.674.133-.156.276-.323.44-.504C4.861 9.969 5.978 9.027 8 9.027s3.139.942 3.965 1.855c.164.181.307.348.44.504.214.251.403.472.615.674.318.303.601.468.929.503a.42.42 0 0 0 .426-.241c.18-.408.265-1.02.243-1.776a12.354 12.354 0 0 0-.339-2.406 13.753 13.753 0 0 0-.748-2.295c-.298-.682-.61-1.19-.885-1.465-.264-.265-.856-.523-1.733-.708-.85-.179-1.877-.27-2.913-.27-1.036 0-2.063.091-2.913.27z"></path>
+              </svg>
+              Play Now
+              <span className="arrow">&rarr;</span>
+            </button>
+          </div>
+        </div>
       </div>
-
-      <div className="relative z-10 max-w-4xl mx-auto text-center">
-        {/* Main Hero Section */}
-        <div className="mb-12">
-          <h1 className="text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 mb-6 animate-pulse">
-            🚀 Quest Flight
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-300 mb-4 leading-relaxed">
-            Embark on an epic space adventure where knowledge is your fuel!
-          </p>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-            Navigate through the cosmos, dodge dangerous obstacles, and prove your intelligence by answering challenging questions. Each correct answer propels you further into the unknown!
-          </p>
-        </div>
-
-        {/* Feature Grid */}
-        <div className="grid md:grid-cols-3 gap-8 mb-12">
-          <div className="bg-slate-800/30 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 hover:border-blue-500/50 transition-all duration-300 transform hover:scale-105">
-            <div className="text-4xl mb-4">🎮</div>
-            <h3 className="text-xl font-semibold text-blue-400 mb-2">Jetpack Action</h3>
-            <p className="text-gray-300 text-sm">
-              Classic jetpack-style gameplay with modern physics. Fuel management, smooth controls, and endless fun!
-            </p>
-          </div>
-          
-          <div className="bg-slate-800/30 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 hover:border-purple-500/50 transition-all duration-300 transform hover:scale-105">
-            <div className="text-4xl mb-4">🧠</div>
-            <h3 className="text-xl font-semibold text-purple-400 mb-2">Brain Training</h3>
-            <p className="text-gray-300 text-sm">
-              Test your knowledge across multiple subjects. From science to history, challenge yourself and learn something new!
-            </p>
-          </div>
-          
-          <div className="bg-slate-800/30 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 hover:border-pink-500/50 transition-all duration-300 transform hover:scale-105">
-            <div className="text-4xl mb-4">🏆</div>
-            <h3 className="text-xl font-semibold text-pink-400 mb-2">Achievement</h3>
-            <p className="text-gray-300 text-sm">
-              Track your progress, beat your high scores, and master the cosmos. Become a space quiz champion!
-            </p>
-          </div>
-        </div>
-
-        {/* Game Stats Preview */}
-        <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-8 mb-12 border border-slate-600/30">
-          <h2 className="text-2xl font-semibold text-white mb-6">🎯 Game Features</h2>
-          <div className="grid md:grid-cols-4 gap-6 text-center">
-            <div>
-              <div className="text-3xl font-bold text-blue-400">10</div>
-              <div className="text-gray-300 text-sm">Questions</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-green-400">3</div>
-              <div className="text-gray-300 text-sm">Lives</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-purple-400">70%</div>
-              <div className="text-gray-300 text-sm">Pass Rate</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-pink-400">∞</div>
-              <div className="text-gray-300 text-sm">Replays</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Call to Action */}
-        <div className="space-y-6">
-          <button
-            type="button"
-            onClick={handleGameClick}
-            className="px-12 py-4 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white text-xl font-bold rounded-2xl hover:shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-110 animate-pulse"
-          >
-            🚀 Launch Quest Flight
-          </button>
-        </div>
-
-        {/* How to Play Quick Guide */}
-        <div className="mt-16 text-left max-w-2xl mx-auto">
-          <h3 className="text-2xl font-semibold text-white mb-6 text-center">🕹️ Quick Start Guide</h3>
-          <div className="space-y-4">
-            <div className="flex items-start gap-4">
-              <span className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
-              <div>
-                <h4 className="font-semibold text-white">Launch Your Jetpack</h4>
-                <p className="text-gray-300 text-sm">Use SPACEBAR (desktop) or tap (mobile) to fly up. Gravity pulls you down naturally.</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-4">
-              <span className="flex-shrink-0 w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
-              <div>
-                <h4 className="font-semibold text-white">Dodge Obstacles</h4>
-                <p className="text-gray-300 text-sm">Avoid the red obstacles. Each hit costs a life - you only have 3!</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-4">
-              <span className="flex-shrink-0 w-8 h-8 bg-pink-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
-              <div>
-                <h4 className="font-semibold text-white">Answer Questions</h4>
-                <p className="text-gray-300 text-sm">When questions appear, fly through the correct answer. Each correct answer gives you 25 points!</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-16 pt-8 border-t border-slate-700">
-          <p className="text-gray-500 text-sm">
-            Built with ❤️ using Next.js, Phaser, and Tailwind CSS • Ready for adventure!
-          </p>
-        </div>
-      </div>
-    </div>
+    </>
   );
 }
