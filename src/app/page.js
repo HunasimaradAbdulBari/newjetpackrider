@@ -5,12 +5,9 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Set a 5-second timeout for the loader
     const timer = setTimeout(() => {
       setMounted(true);
     }, 5000);
-
-    // Cleanup timer on component unmount
     return () => clearTimeout(timer);
   }, []);
 
@@ -315,6 +312,14 @@ export default function Home() {
           transform: translate(1px, 1px);
           transition-duration: 0.2s;
         }
+
+        @media (max-width: 640px) {
+          .button {
+            width: 120px;
+            height: 45px;
+            font-size: 14px;
+          }
+        }
       `}</style>
 
       <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center p-4 overflow-hidden">
@@ -335,64 +340,69 @@ export default function Home() {
           ></div>
         </div>
 
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
+        <div className="relative z-10 max-w-5xl mx-auto text-center">
           {/* Main Hero Section */}
           <div className="mb-12">
-            <h1 className="text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 mb-6 animate-pulse">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 mb-6 animate-pulse">
               Jetpack Rider
             </h1>
-            <p className="text-xl md:text-2xl text-gray-300 mb-4 leading-relaxed">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-4 leading-relaxed px-4">
               Embark on an epic space adventure where knowledge is your fuel!
             </p>
           </div>
 
-          {/* How to Play Quick Guide */}
-          <div className="mb-16 text-left max-w-2xl mx-auto">
-            <h3 className="text-2xl font-semibold text-white mb-6 text-center">How to Play</h3>
-            <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <span className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                  1
-                </span>
-                <div>
-                  <h4 className="font-semibold text-white">Launch Your Jetpack</h4>
-                  <p className="text-gray-300 text-sm">Use SPACEBAR (desktop) or tap (mobile) to fly up. Gravity pulls you down naturally.</p>
+          {/* How to Play Container */}
+          <div className="mb-16 max-w-4xl mx-auto px-4">
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-slate-700/50 shadow-2xl">
+              <h3 className="text-2xl sm:text-3xl font-semibold text-white mb-8 text-center">How to Play</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+                <div className="text-center">
+                  <div className="flex justify-center mb-4">
+                    <span className="w-16 h-16 bg-blue-500 text-white rounded-full flex items-center justify-center text-2xl font-bold">
+                      1
+                    </span>
+                  </div>
+                  <h4 className="font-semibold text-white mb-3 text-lg">Launch Your Jetpack</h4>
+                  <p className="text-gray-300 text-sm leading-relaxed">Use SPACEBAR (desktop) or tap (mobile) to fly up. Gravity pulls you down naturally.</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="flex justify-center mb-4">
+                    <span className="w-16 h-16 bg-purple-500 text-white rounded-full flex items-center justify-center text-2xl font-bold">
+                      2
+                    </span>
+                  </div>
+                  <h4 className="font-semibold text-white mb-3 text-lg">Dodge Obstacles</h4>
+                  <p className="text-gray-300 text-sm leading-relaxed">Avoid the red obstacles. Each hit costs a life - you only have 3!</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="flex justify-center mb-4">
+                    <span className="w-16 h-16 bg-pink-500 text-white rounded-full flex items-center justify-center text-2xl font-bold">
+                      3
+                    </span>
+                  </div>
+                  <h4 className="font-semibold text-white mb-3 text-lg">Answer Questions</h4>
+                  <p className="text-gray-300 text-sm leading-relaxed">When questions appear, fly through the correct answer. Each correct answer gives you 25 points!</p>
                 </div>
               </div>
               
-              <div className="flex items-start gap-4">
-                <span className="flex-shrink-0 w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                  2
-                </span>
-                <div>
-                  <h4 className="font-semibold text-white">Dodge Obstacles</h4>
-                  <p className="text-gray-300 text-sm">Avoid the red obstacles. Each hit costs a life - you only have 3!</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-4">
-                <span className="flex-shrink-0 w-8 h-8 bg-pink-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                  3
-                </span>
-                <div>
-                  <h4 className="font-semibold text-white">Answer Questions</h4>
-                  <p className="text-gray-300 text-sm">When questions appear, fly through the correct answer. Each correct answer gives you 25 points!</p>
-                </div>
-              </div>
+              {/* Additional Tips */}
+             
             </div>
           </div>
 
-          {/* Call to Action - Button below everything */}
+          {/* Call to Action Button */}
           <div className="flex justify-center">
             <button
               type="button"
               onClick={handleGameClick}
-              className="button"
+              className="button transform hover:scale-105 transition-transform duration-200"
             >
               <svg 
                 viewBox="0 0 16 16" 
                 fill="currentColor" 
-                height="18" 
+                height="18"
                 width="18" 
                 xmlns="http://www.w3.org/2000/svg" 
                 className="game"
@@ -401,7 +411,6 @@ export default function Home() {
                 <path d="M3.051 3.26a.5.5 0 0 1 .354-.613l1.932-.518a.5.5 0 0 1 .62.39c.655-.079 1.35-.117 2.043-.117.72 0 1.443.041 2.12.126a.5.5 0 0 1 .622-.399l1.932.518a.5.5 0 0 1 .306.729c.14.09.266.19.373.297.408.408.78 1.05 1.095 1.772.32.733.599 1.591.805 2.466.206.875.34 1.78.364 2.606.024.816-.059 1.602-.328 2.21a1.42 1.42 0 0 1-1.445.83c-.636-.067-1.115-.394-1.513-.773-.245-.232-.496-.526-.739-.808-.126-.148-.25-.292-.368-.423-.728-.804-1.597-1.527-3.224-1.527-1.627 0-2.496.723-3.224 1.527-.119.131-.242.275-.368.423-.243.282-.494.575-.739.808-.398.38-.877.706-1.513.773a1.42 1.42 0 0 1-1.445-.83c-.27-.608-.352-1.395-.329-2.21.024-.826.16-1.73.365-2.606.206-.875.486-1.733.805-2.466.315-.722.687-1.364 1.094-1.772a2.34 2.34 0 0 1 .433-.335.504.504 0 0 1-.028-.079zm2.036.412c-.877.185-1.469.443-1.733.708-.276.276-.587.783-.885 1.465a13.748 13.748 0 0 0-.748 2.295 12.351 12.351 0 0 0-.339 2.406c-.022.755.062 1.368.243 1.776a.42.42 0 0 0 .426.24c.327-.034.61-.199.929-.502.212-.202.4-.423.615-.674.133-.156.276-.323.44-.504C4.861 9.969 5.978 9.027 8 9.027s3.139.942 3.965 1.855c.164.181.307.348.44.504.214.251.403.472.615.674.318.303.601.468.929.503a.42.42 0 0 0 .426-.241c.18-.408.265-1.02.243-1.776a12.354 12.354 0 0 0-.339-2.406 13.753 13.753 0 0 0-.748-2.295c-.298-.682-.61-1.19-.885-1.465-.264-.265-.856-.523-1.733-.708-.85-.179-1.877-.27-2.913-.27-1.036 0-2.063.091-2.913.27z"></path>
               </svg>
               Play Now
-              <span className="arrow">&rarr;</span>
             </button>
           </div>
         </div>

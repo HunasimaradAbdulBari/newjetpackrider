@@ -88,11 +88,19 @@ const MainGameFile = () => {
 
         const RedesignedJetpackScene = createRedesignedJetpackScene();
         const config = {
-          type: window.Phaser.AUTO, width: 1400, height: 700, parent: gameRef.current,
+          type: window.Phaser.AUTO, 
+          width: window.innerWidth < 768 ? window.innerWidth : 1400, 
+          height: window.innerHeight < 500 ? window.innerHeight : 700, 
+          parent: gameRef.current,
           backgroundColor: '#0a0a0f',
           physics: { default: 'arcade', arcade: { gravity: { y: 800 }, debug: false } },
           scene: RedesignedJetpackScene,
-          scale: { mode: window.Phaser.Scale.FIT, autoCenter: window.Phaser.Scale.CENTER_BOTH, min: { width: 800, height: 500 }, max: { width: 1920, height: 1080 } }
+          scale: { 
+            mode: window.Phaser.Scale.FIT, 
+            autoCenter: window.Phaser.Scale.CENTER_BOTH, 
+            min: { width: 320, height: 400 }, 
+            max: { width: 1920, height: 1080 }
+          }
         };
 
         const game = new window.Phaser.Game(config);
@@ -176,7 +184,7 @@ const MainGameFile = () => {
         this.cursors = null; this.spaceKey = null; this.questions = []; this.currentQuestionElements = [];
         this.currentInstructionText = null; this.answerProcessed = false; this.questionTimeout = null;
         this.questionTimeLimit = 15000; this.nextQuestionDistance = 75; this.questionInterval = 30;
-        this.setPauseVisibilityCallback = null;
+        this.setPauseVisibilityCallback = null; this.scaleFactor = Math.min(window.innerWidth / 1400, window.innerHeight / 700);
       }
 
       init(data) {
@@ -219,57 +227,61 @@ const MainGameFile = () => {
         questionCoinGraphics.generateTexture('question-coin', 48, 48); questionCoinGraphics.destroy();
 
         // Background texture
+        const gameWidth = this.sys.canvas.width; const gameHeight = this.sys.canvas.height;
         const bgGraphics = this.add.graphics();
         bgGraphics.fillGradientStyle(0x0B1426, 0x1A2332, 0x2D3748, 0x4A5568, 1);
-        bgGraphics.fillRect(0, 0, 1400, 700);
+        bgGraphics.fillRect(0, 0, gameWidth, gameHeight);
         for (let i = 0; i < 80; i++) {
-          const x = Math.random() * 1400, y = Math.random() * 300, a = Math.random();
+          const x = Math.random() * gameWidth, y = Math.random() * (gameHeight * 0.4), a = Math.random();
           if (a > 0.7) { bgGraphics.fillStyle(0xFFFFFF, a); bgGraphics.fillCircle(x, y, a > 0.9 ? 3 : 1); }
         }
-        const cityColor = 0x1A202C, buildingWidth = 80, buildingSpacing = 20, minHeight = 150, maxHeight = 300;
-        for (let x = 0; x <= 1400; x += buildingWidth + buildingSpacing) {
+        const cityColor = 0x1A202C, buildingWidth = 80, buildingSpacing = 20, minHeight = gameHeight * 0.2, maxHeight = gameHeight * 0.4;
+        for (let x = 0; x <= gameWidth; x += buildingWidth + buildingSpacing) {
           const h = window.Phaser.Math.Between(minHeight, maxHeight);
-          bgGraphics.fillStyle(cityColor, 1); bgGraphics.fillRoundedRect(x, 700 - h, buildingWidth, h, 5);
+          bgGraphics.fillStyle(cityColor, 1); bgGraphics.fillRoundedRect(x, gameHeight - h, buildingWidth, h, 5);
           const windowSize = 8, sx = 18, sy = 25, rows = Math.floor(h / (windowSize + sy)), cols = Math.floor(buildingWidth / (windowSize + sx));
           for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
               if (window.Phaser.Math.Between(0, 100) > 40) {
-                const wx = x + 10 + c * sx, wy = 700 - h + 20 + r * sy;
+                const wx = x + 10 + c * sx, wy = gameHeight - h + 20 + r * sy;
                 bgGraphics.fillStyle(0xFED7AA, 0.9); bgGraphics.fillRoundedRect(wx, wy, windowSize, windowSize, 2);
               }
             }
           }
         }
-        bgGraphics.generateTexture('redesigned-cityscape-background', 1400, 700); bgGraphics.destroy();
+        bgGraphics.generateTexture('redesigned-cityscape-background', gameWidth, gameHeight); bgGraphics.destroy();
       }
 
       create() {
-        this.physics.world.setBounds(0, 0, 1400, 700);
+        this.physics.world.setBounds(0, 0, this.sys.canvas.width, this.sys.canvas.height);
         this.createScrollingBackground(); this.createRedesignedPlayer(); this.createRedesignedUI(); this.setupInput();
       }
 
       createScrollingBackground() {
-        this.background = this.add.tileSprite(0, 0, 1400, 700, 'redesigned-cityscape-background');
+        this.background = this.add.tileSprite(0, 0, this.sys.canvas.width, this.sys.canvas.height, 'redesigned-cityscape-background');
         this.background.setOrigin(0, 0);
       }
 
       createRedesignedPlayer() {
-        this.player = this.physics.add.sprite(120, 350, 'redesigned-jetpack-player');
-        this.player.setCollideWorldBounds(true); this.player.setBounce(0.1); this.player.setScale(0.8);
+        const playerX = this.sys.canvas.width * 0.1; const playerY = this.sys.canvas.height * 0.5;
+        this.player = this.physics.add.sprite(playerX, playerY, 'redesigned-jetpack-player');
+        this.player.setCollideWorldBounds(true); this.player.setBounce(0.1); this.player.setScale(0.8 * this.scaleFactor);
         this.player.setSize(50, 65); this.player.setGravityY(0); this.player.setTint(0xFFFFFF);
+        this.hoverTargetY = this.sys.canvas.height * 0.77;
       }
 
       createRedesignedUI() {
         this.createHeartIcons();
-        this.scoreText = this.add.text(30, 65, 'Score: ' + this.score, { fontSize: '22px', fill: '#68D391', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' });
+        const fontSize = Math.max(16, 22 * this.scaleFactor);
+        this.scoreText = this.add.text(30, 65, 'Score: ' + this.score, { fontSize: fontSize + 'px', fill: '#68D391', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' });
         this.createHorizontalFuelBar();
       }
 
       createHeartIcons() {
         this.heartIcons = [];
         for (let i = 0; i < 3; i++) {
-          const heart = this.add.image(30 + (i * 45), 35, 'full-heart');
-          heart.setScale(0.8); this.heartIcons.push(heart);
+          const heart = this.add.image(30 + (i * 45 * this.scaleFactor), 35, 'full-heart');
+          heart.setScale(0.8 * this.scaleFactor); this.heartIcons.push(heart);
         }
       }
 
@@ -280,8 +292,9 @@ const MainGameFile = () => {
       }
 
       createHorizontalFuelBar() {
-        this.fuelBarBg = this.add.rectangle(700, 5, 1400, 4, 0x2D3748); this.fuelBarBg.setOrigin(0.5, 0);
-        this.fuelBar = this.add.rectangle(0, 5, 1400, 4, 0x68D391); this.fuelBar.setOrigin(0, 0);
+        const barWidth = this.sys.canvas.width;
+        this.fuelBarBg = this.add.rectangle(barWidth/2, 5, barWidth, 4, 0x2D3748); this.fuelBarBg.setOrigin(0.5, 0);
+        this.fuelBar = this.add.rectangle(0, 5, barWidth, 4, 0x68D391); this.fuelBar.setOrigin(0, 0);
       }
 
       setFuelBarVisible(visible) {
@@ -401,7 +414,7 @@ const MainGameFile = () => {
 
       updateFuelBar() {
         const fuelPercent = this.jetpackFuel / this.maxJetpackFuel;
-        this.fuelBar.displayWidth = fuelPercent * 1400;
+        this.fuelBar.displayWidth = fuelPercent * this.sys.canvas.width;
         this.fuelBar.setFillStyle(fuelPercent > 0.6 ? 0x68D391 : fuelPercent > 0.3 ? 0xF6AD55 : 0xF56565);
       }
 
@@ -444,7 +457,7 @@ const MainGameFile = () => {
       handleQuestionSkipped() {
         this.answerProcessed = true; this.lives--; this.wrongAnswers++; this.questionIndex++;
         this.cameras.main.shake(400, 0.02);
-        const skipText = this.add.text(this.player.x, this.player.y - 50, 'SKIPPED! -1 LIFE', { fontSize: '28px', fill: '#F56565', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+        const skipText = this.add.text(this.player.x, this.player.y - 50, 'SKIPPED! -1 LIFE', { fontSize: (28 * this.scaleFactor) + 'px', fill: '#F56565', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
         this.tweens.add({ targets: skipText, y: skipText.y - 60, alpha: 0, duration: 1400, onComplete: () => skipText.destroy() });
         this.nextQuestionDistance = this.distance + this.questionInterval;
         if (this.lives <= 0) {
@@ -457,30 +470,42 @@ const MainGameFile = () => {
       showStaticQuestionUI(question) {
         const maxTextLength = Math.max(...question.answers.map(a => a.length));
         const useVerticalLayout = maxTextLength > 25;
-        const containerHeight = useVerticalLayout ? 250 : 180, containerWidth = 800, containerY = 20 + containerHeight/2;
+        const containerHeight = useVerticalLayout ? 250 * this.scaleFactor : 180 * this.scaleFactor;
+        const containerWidth = 800 * this.scaleFactor;
+        const containerY = 20 + containerHeight/2;
         
-        this.questionContainer = this.add.rectangle(700, containerY, containerWidth, containerHeight, 0x2D3748, 0.95);
+        this.questionContainer = this.add.rectangle(this.sys.canvas.width/2, containerY, containerWidth, containerHeight, 0x2D3748, 0.95);
         this.questionContainer.setStrokeStyle(2, 0x68D391);
-        this.questionText = this.add.text(700, containerY - containerHeight/2 + 40, question.question, { fontSize: '18px', fill: '#E2E8F0', align: 'center', fontWeight: 'bold', wordWrap: { width: 750 }, fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+        const questionFontSize = Math.max(14, 18 * this.scaleFactor);
+        this.questionText = this.add.text(this.sys.canvas.width/2, containerY - containerHeight/2 + 40, question.question, { fontSize: questionFontSize + 'px', fill: '#E2E8F0', align: 'center', fontWeight: 'bold', wordWrap: { width: 750 * this.scaleFactor }, fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
 
         const answerLabels = ['A', 'B', 'C', 'D'], answerElements = [];
         if (useVerticalLayout) {
           for (let i = 0; i < question.answers.length; i++) {
-            const yPos = containerY - containerHeight/2 + 100 + (i * 45);
-            const optionBg = this.add.rectangle(700, yPos, 750, 40, 0x1A202C, 0.6);
+            const yPos = containerY - containerHeight/2 + 100 + (i * 45 * this.scaleFactor);
+            const optionBg = this.add.rectangle(this.sys.canvas.width/2, yPos, 750 * this.scaleFactor, 40 * this.scaleFactor, 0x1A202C, 0.6);
             optionBg.setStrokeStyle(1, 0x68D391, 0.5);
-            const label = this.add.text(350, yPos, answerLabels[i], { fontSize: '20px', fill: '#F6AD55', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
-            const answerText = this.add.text(700, yPos, question.answers[i], { fontSize: '14px', fill: '#E2E8F0', align: 'center', fontWeight: 'bold', wordWrap: { width: 600 }, fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+            const labelFontSize = Math.max(16, 20 * this.scaleFactor);
+            const answerFontSize = Math.max(12, 14 * this.scaleFactor);
+            const label = this.add.text(this.sys.canvas.width/2 - 200 * this.scaleFactor, yPos, answerLabels[i], { fontSize: labelFontSize + 'px', fill: '#F6AD55', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+            const answerText = this.add.text(this.sys.canvas.width/2, yPos, question.answers[i], { fontSize: answerFontSize + 'px', fill: '#E2E8F0', align: 'center', fontWeight: 'bold', wordWrap: { width: 600 * this.scaleFactor }, fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
             answerElements.push({ bg: optionBg, label, text: answerText, index: i, answer: question.answers[i] });
           }
         } else {
-          const positions = [{ x: 580, y: containerY - containerHeight/2 + 90 }, { x: 820, y: containerY - containerHeight/2 + 90 }, { x: 580, y: containerY - containerHeight/2 + 140 }, { x: 820, y: containerY - containerHeight/2 + 140 }];
+          const positions = [
+            { x: this.sys.canvas.width/2 - 120 * this.scaleFactor, y: containerY - containerHeight/2 + 90 }, 
+            { x: this.sys.canvas.width/2 + 120 * this.scaleFactor, y: containerY - containerHeight/2 + 90 }, 
+            { x: this.sys.canvas.width/2 - 120 * this.scaleFactor, y: containerY - containerHeight/2 + 140 }, 
+            { x: this.sys.canvas.width/2 + 120 * this.scaleFactor, y: containerY - containerHeight/2 + 140 }
+          ];
           for (let i = 0; i < question.answers.length; i++) {
             const pos = positions[i];
-            const optionBg = this.add.rectangle(pos.x, pos.y, 200, 45, 0x1A202C, 0.6);
+            const optionBg = this.add.rectangle(pos.x, pos.y, 200 * this.scaleFactor, 45 * this.scaleFactor, 0x1A202C, 0.6);
             optionBg.setStrokeStyle(1, 0x68D391, 0.5);
-            const label = this.add.text(pos.x - 80, pos.y, answerLabels[i], { fontSize: '18px', fill: '#F6AD55', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
-            const answerText = this.add.text(pos.x, pos.y, question.answers[i], { fontSize: '12px', fill: '#E2E8F0', align: 'center', fontWeight: 'bold', wordWrap: { width: 150 }, fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+            const labelFontSize = Math.max(14, 18 * this.scaleFactor);
+            const answerFontSize = Math.max(10, 12 * this.scaleFactor);
+            const label = this.add.text(pos.x - 80 * this.scaleFactor, pos.y, answerLabels[i], { fontSize: labelFontSize + 'px', fill: '#F6AD55', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+            const answerText = this.add.text(pos.x, pos.y, question.answers[i], { fontSize: answerFontSize + 'px', fill: '#E2E8F0', align: 'center', fontWeight: 'bold', wordWrap: { width: 150 * this.scaleFactor }, fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
             answerElements.push({ bg: optionBg, label, text: answerText, index: i, answer: question.answers[i] });
           }
         }
@@ -491,16 +516,17 @@ const MainGameFile = () => {
       spawnMovingCoins(question) {
         this.questionCoins = [];
         const coinSpeed = -182.8125, answerLabels = ['A', 'B', 'C', 'D'];
-        const verticalSpacing = 70, staircaseOffsets = [{ x: 0, y: 0 }, { x: 80, y: verticalSpacing }, { x: 170, y: verticalSpacing * 2 }, { x: 230, y: verticalSpacing * 3 }];
-        const baseY = 350;
+        const verticalSpacing = 70 * this.scaleFactor, staircaseOffsets = [{ x: 0, y: 0 }, { x: 80, y: verticalSpacing }, { x: 170, y: verticalSpacing * 2 }, { x: 230, y: verticalSpacing * 3 }];
+        const baseY = this.sys.canvas.height * 0.5;
 
         for (let i = 0; i < question.answers.length; i++) {
-          const startX = 1500 + staircaseOffsets[i].x, yPos = baseY + staircaseOffsets[i].y;
-          const coinSprite = this.add.sprite(startX, yPos, 'question-coin'); coinSprite.setScale(1.0);
-          const coinLabel = this.add.text(startX, yPos, answerLabels[i], { fontSize: '18px', fill: '#A16207', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+          const startX = this.sys.canvas.width + 100 + staircaseOffsets[i].x, yPos = baseY + staircaseOffsets[i].y;
+          const coinSprite = this.add.sprite(startX, yPos, 'question-coin'); coinSprite.setScale(1.0 * this.scaleFactor);
+          const coinLabelFontSize = Math.max(14, 18 * this.scaleFactor);
+          const coinLabel = this.add.text(startX, yPos, answerLabels[i], { fontSize: coinLabelFontSize + 'px', fill: '#A16207', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
           const coinData = { sprite: coinSprite, label: coinLabel, answerIndex: i, answerText: question.answers[i], speed: coinSpeed, isActive: true };
           this.questionCoins.push(coinData);
-          this.tweens.add({ targets: coinSprite, scaleX: 1.1, scaleY: 1.1, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+          this.tweens.add({ targets: coinSprite, scaleX: (1.1 * this.scaleFactor), scaleY: (1.1 * this.scaleFactor), duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
         }
         this.hoverTargetY = baseY + staircaseOffsets[3].y;
         this.time.delayedCall(800, () => this.showCleanInstruction());
@@ -551,7 +577,8 @@ const MainGameFile = () => {
         if (this.currentAnswerElements && this.currentAnswerElements[coinIndex]) this.currentAnswerElements[coinIndex].bg.setFillStyle(0x68D391, 0.8);
         this.createSuccessEffect(this.player.x, this.player.y);
         this.score += 25; this.correctAnswers++; this.questionIndex++; this.nextQuestionDistance = this.distance + this.questionInterval;
-        const scorePopup = this.add.text(this.player.x, this.player.y - 50, '+25', { fontSize: '36px', fill: '#68D391', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+        const scoreFontSize = Math.max(28, 36 * this.scaleFactor);
+        const scorePopup = this.add.text(this.player.x, this.player.y - 50, '+25', { fontSize: scoreFontSize + 'px', fill: '#68D391', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
         this.tweens.add({ targets: scorePopup, y: scorePopup.y - 50, alpha: 0, scale: 1.5, duration: 1400, ease: 'Power2', onComplete: () => scorePopup.destroy() });
         this.time.delayedCall(2500, () => this.hideQuestion());
       }
@@ -560,7 +587,8 @@ const MainGameFile = () => {
         if (this.currentAnswerElements && this.currentAnswerElements[coinIndex]) this.currentAnswerElements[coinIndex].bg.setFillStyle(0xF56565, 0.8);
         this.highlightCorrectAnswer(correctAnswer); this.cameras.main.shake(400, 0.02);
         this.lives--; this.wrongAnswers++; this.questionIndex++; this.nextQuestionDistance = this.distance + this.questionInterval;
-        const damageText = this.add.text(this.player.x, this.player.y - 50, '-1 LIFE', { fontSize: '28px', fill: '#F56565', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+        const damageFontSize = Math.max(22, 28 * this.scaleFactor);
+        const damageText = this.add.text(this.player.x, this.player.y - 50, '-1 LIFE', { fontSize: damageFontSize + 'px', fill: '#F56565', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
         this.tweens.add({ targets: damageText, y: damageText.y - 60, alpha: 0, duration: 1400, onComplete: () => damageText.destroy() });
         if (this.lives <= 0) { this.gameState = 'GAME_OVER'; this.time.delayedCall(1800, () => this.gameOver()); } else { this.time.delayedCall(3000, () => this.hideQuestion()); }
       }
@@ -577,8 +605,8 @@ const MainGameFile = () => {
       createSuccessEffect(x, y) {
         const colors = [0x68D391, 0x90CDF4, 0xF6AD55, 0xFED7AA];
         for (let i = 0; i < 12; i++) {
-          const p = this.add.circle(x, y, window.Phaser.Math.Between(4, 8), colors[i % colors.length]);
-          const angle = (i / 12) * Math.PI * 2, dist = 80 + Math.random() * 40;
+          const p = this.add.circle(x, y, window.Phaser.Math.Between(4 * this.scaleFactor, 8 * this.scaleFactor), colors[i % colors.length]);
+          const angle = (i / 12) * Math.PI * 2, dist = (80 + Math.random() * 40) * this.scaleFactor;
           this.tweens.add({ targets: p, x: x + Math.cos(angle) * dist, y: y + Math.sin(angle) * dist, alpha: 0, scale: 0.3, duration: 1100, ease: 'Power2', onComplete: () => p.destroy() });
         }
       }
@@ -601,7 +629,8 @@ const MainGameFile = () => {
       }
 
       showCleanInstruction() {
-        const instruction = this.add.text(700, 650, 'Fly through the correct coin to answer!', { fontSize: '16px', fill: '#FED7D7', align: 'center', fontWeight: 'bold', fontFamily: 'Arial, sans-serif', stroke: '#1A202C', strokeThickness: 2 }).setOrigin(0.5);
+        const instructionFontSize = Math.max(12, 16 * this.scaleFactor);
+        const instruction = this.add.text(this.sys.canvas.width/2, this.sys.canvas.height - 50, 'Fly through the correct coin to answer!', { fontSize: instructionFontSize + 'px', fill: '#FED7D7', align: 'center', fontWeight: 'bold', fontFamily: 'Arial, sans-serif', stroke: '#1A202C', strokeThickness: 2 }).setOrigin(0.5);
         this.tweens.add({ targets: instruction, alpha: 0.7, scale: 0.95, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
         this.currentInstructionText = instruction;
       }
@@ -621,52 +650,66 @@ const MainGameFile = () => {
       }
 
       createEndScreen(passed) {
-        const container = this.add.container(700, 350); container.setDepth(passed ? 4000 : 3000);
-        const overlay = this.add.rectangle(0, 0, 1400, 700, 0x0B1426, 0.95);
-        const cardBg = this.add.rectangle(0, 0, 440, 620, 0x1A202C, 1);
+        const container = this.add.container(this.sys.canvas.width/2, this.sys.canvas.height/2);
+        const overlay = this.add.rectangle(0, 0, this.sys.canvas.width, this.sys.canvas.height, 0x0B1426, 0.95);
+        const cardWidth = Math.min(440, this.sys.canvas.width * 0.9), cardHeight = Math.min(600, this.sys.canvas.height * 0.85);
+        const cardBg = this.add.rectangle(0, 0, cardWidth, cardHeight, 0x1A202C, 1);
         cardBg.setStrokeStyle(6, passed ? 0x68D391 : 0xF56565, 1);
-        const cardShadow = this.add.rectangle(0, 0, 460, 640, passed ? 0x68D391 : 0xF56565, 0.3);
 
-        const title = this.add.text(0, -260, passed ? 'MISSION COMPLETED' : 'MISSION FAILED', { fontSize: '32px', fill: '#E2E8F0', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
-        const scoreLabel = this.add.text(0, -200, 'FINAL SCORE', { fontSize: '18px', fill: '#9CA3AF', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
-        const scoreValue = this.add.text(0, -165, `${this.score}`, { fontSize: '48px', fill: '#68D391', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+        const titleFontSize = Math.max(20, 32 * this.scaleFactor);
+        const title = this.add.text(0, -cardHeight/2 + 60, passed ? 'MISSION COMPLETED' : 'MISSION FAILED', { fontSize: titleFontSize + 'px', fill: '#E2E8F0', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+        
+        const scoreLabelFontSize = Math.max(14, 18 * this.scaleFactor);
+        const scoreLabel = this.add.text(0, -cardHeight/2 + 120, 'FINAL SCORE', { fontSize: scoreLabelFontSize + 'px', fill: '#9CA3AF', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+        const scoreValueFontSize = Math.max(32, 48 * this.scaleFactor);
+        const scoreValue = this.add.text(0, -cardHeight/2 + 155, `${this.score}`, { fontSize: scoreValueFontSize + 'px', fill: '#68D391', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
 
-        const createStat = (x, icon, number, label, color) => {
-          const stat = this.add.container(x, -80);
-          const bg = this.add.rectangle(0, 0, 180, 100, 0x2C3A50, 1); bg.setStrokeStyle(3, 0x4A5568, 1);
-          const num = this.add.text(0, 12, `${number}`, { fontSize: '28px', fill: color, fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
-          const lbl = this.add.text(0, 35, label, { fontSize: '14px', fill: color, fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
-          stat.add([bg, icon, num, lbl]); return stat;
-        };
+        const statsBg = this.add.rectangle(0, -cardHeight/2 + 250, cardWidth - 40, 120, 0x2C3A50, 1);
+        statsBg.setStrokeStyle(2, 0x4A5568, 1);
 
-        const checkIcon = this.add.graphics(); checkIcon.lineStyle(4, 0x68D391, 1); checkIcon.strokeCircle(0, -15, 15); checkIcon.moveTo(-6, -15); checkIcon.lineTo(-2, -10); checkIcon.lineTo(6, -20); checkIcon.strokePath();
-        const xIcon = this.add.graphics(); xIcon.lineStyle(4, 0xF56565, 1); xIcon.strokeCircle(0, -15, 15); xIcon.moveTo(-9, -24); xIcon.lineTo(9, -6); xIcon.moveTo(9, -24); xIcon.lineTo(-9, -6); xIcon.strokePath();
+        const statFontSize = Math.max(18, 24 * this.scaleFactor);
+        const labelFontSize = Math.max(12, 14 * this.scaleFactor);
+        const correctStat = this.add.text(-cardWidth/4, -cardHeight/2 + 240, `${this.correctAnswers}`, { fontSize: statFontSize + 'px', fill: '#68D391', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+        const correctLabel = this.add.text(-cardWidth/4, -cardHeight/2 + 265, 'CORRECT', { fontSize: labelFontSize + 'px', fill: '#68D391', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+        
+        const wrongStat = this.add.text(cardWidth/4, -cardHeight/2 + 240, `${this.wrongAnswers}`, { fontSize: statFontSize + 'px', fill: '#F56565', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+        const wrongLabel = this.add.text(cardWidth/4, -cardHeight/2 + 265, 'WRONG', { fontSize: labelFontSize + 'px', fill: '#F56565', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
 
-        const correctStat = createStat(-110, checkIcon, this.correctAnswers, 'CORRECT', '#68D391');
-        const wrongStat = createStat(110, xIcon, this.wrongAnswers, 'WRONG', '#F56565');
+        const progressBg = this.add.rectangle(0, -cardHeight/2 + 330, cardWidth - 80, 20, 0x24314C, 1);
+        const progressWidth = Math.max(20, (this.questionIndex / this.questions.length) * (cardWidth - 80));
+        const progressFill = this.add.rectangle(-(cardWidth - 80)/2 + progressWidth/2, -cardHeight/2 + 330, progressWidth, 20, 0x68D391, 1);
+        const progressTextFontSize = Math.max(12, 16 * this.scaleFactor);
+        const progressText = this.add.text(0, -cardHeight/2 + 360, `${this.questionIndex} / ${this.questions.length} QUESTIONS`, { fontSize: progressTextFontSize + 'px', fill: '#E2E8F0', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
 
-        const progressBg = this.add.rectangle(0, 40, 350, 22, 0x24314C, 1);
-        const progressFill = this.add.rectangle(-175 + (this.questionIndex / this.questions.length) * 175, 40, (this.questionIndex / this.questions.length) * 350, 22, 0x68D391, 1);
-        const progressText = this.add.text(0, 75, `${this.questionIndex} / ${this.questions.length} QUESTIONS`, { fontSize: '16px', fill: '#E2E8F0', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
-        const statusText = this.add.text(0, 130, passed ? 'EXCELLENT WORK' : 'KEEP PRACTICING', { fontSize: '20px', fill: passed ? '#68D391' : '#F6AD55', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+        const statusFontSize = Math.max(16, 20 * this.scaleFactor);
+        const statusText = this.add.text(0, -cardHeight/2 + 400, passed ? 'EXCELLENT WORK' : 'KEEP PRACTICING', { fontSize: statusFontSize + 'px', fill: passed ? '#68D391' : '#F6AD55', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
 
-        const createButton = (x, text, bgColor, textColor, borderColor) => {
-          const btn = this.add.container(x, 220);
-          const bg = this.add.rectangle(0, 0, 180, 60, bgColor, 1); bg.setStrokeStyle(4, borderColor, 1);
-          const txt = this.add.text(0, 0, text, { fontSize: '16px', fill: textColor, fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
-          btn.add([bg, txt]); btn.setInteractive(new window.Phaser.Geom.Rectangle(-90, -30, 180, 60), window.Phaser.Geom.Rectangle.Contains);
-          btn.on('pointerover', () => { this.tweens.add({ targets: btn, scaleX: 1.05, scaleY: 1.05, duration: 200 }); bg.setFillStyle(borderColor); });
-          btn.on('pointerout', () => { this.tweens.add({ targets: btn, scaleX: 1, scaleY: 1, duration: 200 }); bg.setFillStyle(bgColor); });
-          return { btn, bg };
-        };
+        const buttonWidth = Math.min(160, cardWidth/2.5), buttonHeight = 50;
+        const buttonFontSize = Math.max(12, 16 * this.scaleFactor);
 
-        const restartBtn = createButton(-110, 'PLAY AGAIN', passed ? 0x68D391 : 0xF56565, passed ? '#132618' : '#FFFFFF', passed ? 0x5BB585 : 0xE04848);
-        const homeBtn = createButton(110, 'HOME', 0x202F47, passed ? '#68D391' : '#F56565', passed ? 0x68D391 : 0xF56565);
+        const restartBtn = this.add.container(-buttonWidth/2 - 20, cardHeight/2 - 80);
+        const restartBg = this.add.rectangle(0, 0, buttonWidth, buttonHeight, passed ? 0x68D391 : 0xF56565, 1);
+        restartBg.setStrokeStyle(3, passed ? 0x5BB585 : 0xE04848, 1);
+        const restartTxt = this.add.text(0, 0, 'PLAY AGAIN', { fontSize: buttonFontSize + 'px', fill: passed ? '#132618' : '#FFFFFF', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+        restartBtn.add([restartBg, restartTxt]);
+        restartBtn.setInteractive(new window.Phaser.Geom.Rectangle(-buttonWidth/2, -buttonHeight/2, buttonWidth, buttonHeight), window.Phaser.Geom.Rectangle.Contains);
 
-        restartBtn.btn.on('pointerdown', () => { if (this.setPauseVisibilityCallback) this.setPauseVisibilityCallback(true); this.scene.restart({ questions: this.questions }); });
-        homeBtn.btn.on('pointerdown', () => { if (typeof window !== 'undefined') window.location.href = '/'; });
+        const homeBtn = this.add.container(buttonWidth/2 + 20, cardHeight/2 - 80);
+        const homeBg = this.add.rectangle(0, 0, buttonWidth, buttonHeight, 0x202F47, 1);
+        homeBg.setStrokeStyle(3, passed ? 0x68D391 : 0xF56565, 1);
+        const homeTxt = this.add.text(0, 0, 'HOME', { fontSize: buttonFontSize + 'px', fill: passed ? '#68D391' : '#F56565', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }).setOrigin(0.5);
+        homeBtn.add([homeBg, homeTxt]);
+        homeBtn.setInteractive(new window.Phaser.Geom.Rectangle(-buttonWidth/2, -buttonHeight/2, buttonWidth, buttonHeight), window.Phaser.Geom.Rectangle.Contains);
 
-        container.add([overlay, cardShadow, cardBg, title, scoreLabel, scoreValue, correctStat, wrongStat, progressBg, progressFill, progressText, statusText]);
+        restartBtn.on('pointerover', () => { this.tweens.add({ targets: restartBtn, scaleX: 1.05, scaleY: 1.05, duration: 200 }); restartBg.setFillStyle(passed ? 0x5BB585 : 0xE04848); });
+        restartBtn.on('pointerout', () => { this.tweens.add({ targets: restartBtn, scaleX: 1, scaleY: 1, duration: 200 }); restartBg.setFillStyle(passed ? 0x68D391 : 0xF56565); });
+        homeBtn.on('pointerover', () => { this.tweens.add({ targets: homeBtn, scaleX: 1.05, scaleY: 1.05, duration: 200 }); homeBg.setFillStyle(passed ? 0x68D391 : 0xF56565); });
+        homeBtn.on('pointerout', () => { this.tweens.add({ targets: homeBtn, scaleX: 1, scaleY: 1, duration: 200 }); homeBg.setFillStyle(0x202F47); });
+
+        restartBtn.on('pointerdown', () => { if (this.setPauseVisibilityCallback) this.setPauseVisibilityCallback(true); this.scene.restart({ questions: this.questions }); });
+        homeBtn.on('pointerdown', () => { if (typeof window !== 'undefined') window.location.href = '/'; });
+
+        container.add([overlay, cardBg, title, scoreLabel, scoreValue, statsBg, correctStat, correctLabel, wrongStat, wrongLabel, progressBg, progressFill, progressText, statusText, restartBtn, homeBtn]);
         container.setAlpha(0); container.setScale(0.8);
         this.tweens.add({ targets: container, alpha: 1, scaleX: 1, scaleY: 1, duration: 800, ease: 'Back.easeOut' });
         this.tweens.addCounter({ from: 0, to: this.score, duration: 1500, delay: 500, ease: 'Power2', onUpdate: (tween) => { scoreValue.setText(Math.floor(tween.getValue())); } });
