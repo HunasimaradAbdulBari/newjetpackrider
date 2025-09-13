@@ -11,8 +11,30 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleGameClick = useCallback(() => {
+  const handleGameClick = useCallback(async () => {
     if (typeof window !== 'undefined' && mounted) {
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        try {
+          // Request fullscreen before navigating on mobile
+          if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          } else if (document.documentElement.webkitRequestFullscreen) {
+            await document.documentElement.webkitRequestFullscreen();
+          } else if (document.documentElement.mozRequestFullScreen) {
+            await document.documentElement.mozRequestFullScreen();
+          }
+          
+          // Hide address bar
+          window.scrollTo(0, 1);
+          setTimeout(() => window.scrollTo(0, 1), 100);
+        } catch (err) {
+          console.log('Fullscreen request failed or blocked');
+        }
+      }
+      
+      // Navigate to game
       window.location.href = '/game';
     }
   }, [mounted]);
@@ -386,9 +408,6 @@ export default function Home() {
                   <p className="text-gray-300 text-sm leading-relaxed">When questions appear, fly through the correct answer. Each correct answer gives you 25 points!</p>
                 </div>
               </div>
-              
-              {/* Additional Tips */}
-             
             </div>
           </div>
 
