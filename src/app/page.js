@@ -274,113 +274,181 @@ export default function Home() {
   return (
     <>
       <style jsx>{`
-        .button {
-          width: 140px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: flex-start;
-          gap: 10px;
-          padding: 0px 15px;
-          background-color: red;
-          border-radius: 10px;
-          border: none;
-          color: white;
+        .modern-button {
           position: relative;
-          cursor: pointer;
-          font-weight: 900;
-          transition-duration: 0.2s;
-          margin: 0 auto;
-        }
-
-        .game path {
-          color: white;
-        }
-
-        .button .arrow {
-          position: absolute;
-          right: 0;
-          padding: 0px 5px;
-          width: 30px;
-          height: 100%;
-          font-size: 18px;
-          display: flex;
+          display: inline-flex;
           align-items: center;
           justify-content: center;
+          padding: 16px 32px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border: none;
+          border-radius: 50px;
+          color: white;
+          font-weight: 700;
+          font-size: 18px;
+          letter-spacing: 0.5px;
+          cursor: pointer;
+          overflow: hidden;
+          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+          text-transform: uppercase;
+          min-width: 200px;
         }
 
-        .button:hover,
-        .button:focus {
-          background-color: black;
-          transition-duration: 0.2s;
+        .modern-button:before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+          transition: left 0.6s;
         }
 
-        .button:hover .arrow {
-          animation: slide-right 0.6s ease-out both;
+        .modern-button:hover:before {
+          left: 100%;
         }
 
-        @keyframes slide-right {
-          0% {
-            transform: translateX(-10px);
-            opacity: 0;
+        .modern-button:hover {
+          transform: translateY(-3px) scale(1.05);
+          box-shadow: 0 20px 40px rgba(102, 126, 234, 0.4);
+          background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+
+        .modern-button:active {
+          transform: translateY(-1px) scale(1.02);
+          transition: all 0.1s;
+        }
+
+        .modern-button .button-icon {
+          margin-right: 12px;
+          transition: transform 0.3s ease;
+        }
+
+        .modern-button:hover .button-icon {
+          transform: rotate(15deg) scale(1.1);
+        }
+
+        .floating-shapes {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          pointer-events: none;
+        }
+
+        .shape {
+          position: absolute;
+          opacity: 0.1;
+          animation: float 6s ease-in-out infinite;
+        }
+
+        .shape:nth-child(1) { 
+          left: 10%; 
+          top: 20%; 
+          animation-delay: 0s; 
+          animation-duration: 8s;
+        }
+        .shape:nth-child(2) { 
+          right: 10%; 
+          top: 30%; 
+          animation-delay: 2s; 
+          animation-duration: 6s;
+        }
+        .shape:nth-child(3) { 
+          left: 20%; 
+          bottom: 30%; 
+          animation-delay: 4s; 
+          animation-duration: 7s;
+        }
+        .shape:nth-child(4) { 
+          right: 20%; 
+          bottom: 20%; 
+          animation-delay: 1s; 
+          animation-duration: 9s;
+        }
+
+        @keyframes float {
+          0%, 100% { 
+            transform: translateY(0px) rotate(0deg); 
           }
-          100% {
-            transform: translateX(0);
-            opacity: 1;
+          33% { 
+            transform: translateY(-30px) rotate(120deg); 
+          }
+          66% { 
+            transform: translateY(-10px) rotate(240deg); 
           }
         }
 
-        .button:active {
-          transform: translate(1px, 1px);
-          transition-duration: 0.2s;
+        .glass-card {
+          backdrop-filter: blur(20px);
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+        }
+
+        .step-card {
+          backdrop-filter: blur(15px);
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          transition: all 0.3s ease;
+        }
+
+        .step-card:hover {
+          transform: translateY(-5px);
+          background: rgba(255, 255, 255, 0.12);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .step-number {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .title-glow {
+          text-shadow: 0 0 20px rgba(102, 126, 234, 0.5),
+                       0 0 40px rgba(118, 75, 162, 0.3),
+                       0 0 60px rgba(102, 126, 234, 0.1);
         }
 
         @media (max-width: 640px) {
-          .button {
-            width: 120px;
-            height: 45px;
-            font-size: 14px;
+          .modern-button {
+            padding: 14px 28px;
+            font-size: 16px;
+            min-width: 180px;
           }
         }
       `}</style>
 
       <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center p-4 overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-20 left-20 w-32 h-32 bg-blue-500/10 rounded-full animate-pulse"></div>
-          <div 
-            className="absolute top-40 right-32 w-24 h-24 bg-purple-500/10 rounded-full animate-pulse" 
-            style={{animationDelay: '1s'}}
-          ></div>
-          <div 
-            className="absolute bottom-32 left-40 w-20 h-20 bg-pink-500/10 rounded-full animate-pulse" 
-            style={{animationDelay: '2s'}}
-          ></div>
-          <div 
-            className="absolute bottom-20 right-20 w-28 h-28 bg-green-500/10 rounded-full animate-pulse" 
-            style={{animationDelay: '0.5s'}}
-          ></div>
+        {/* Floating Background Shapes */}
+        <div className="floating-shapes">
+          <div className="shape w-32 h-32 bg-blue-500 rounded-full"></div>
+          <div className="shape w-24 h-24 bg-purple-500 rounded-full"></div>
+          <div className="shape w-20 h-20 bg-pink-500 rounded-full"></div>
+          <div className="shape w-28 h-28 bg-green-500 rounded-full"></div>
         </div>
 
         <div className="relative z-10 max-w-5xl mx-auto text-center">
           {/* Main Hero Section */}
           <div className="mb-12">
-            <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 mb-6 animate-pulse">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 mb-6 title-glow">
               Jetpack Rider
             </h1>
-            <p className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-4 leading-relaxed px-4">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-4 leading-relaxed px-4 font-medium">
               Embark on an epic space adventure where knowledge is your fuel!
             </p>
           </div>
 
           {/* How to Play Container */}
           <div className="mb-16 max-w-4xl mx-auto px-4">
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-slate-700/50 shadow-2xl">
+            <div className="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl">
               <h3 className="text-2xl sm:text-3xl font-semibold text-white mb-8 text-center">How to Play</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-                <div className="text-center">
+                <div className="step-card text-center p-6 rounded-2xl">
                   <div className="flex justify-center mb-4">
-                    <span className="w-16 h-16 bg-blue-500 text-white rounded-full flex items-center justify-center text-2xl font-bold">
+                    <span className="step-number w-16 h-16 text-white rounded-full flex items-center justify-center text-2xl font-bold">
                       1
                     </span>
                   </div>
@@ -388,9 +456,9 @@ export default function Home() {
                   <p className="text-gray-300 text-sm leading-relaxed">Use SPACEBAR (desktop) or tap (mobile) to fly up. Gravity pulls you down naturally.</p>
                 </div>
                 
-                <div className="text-center">
+                <div className="step-card text-center p-6 rounded-2xl">
                   <div className="flex justify-center mb-4">
-                    <span className="w-16 h-16 bg-purple-500 text-white rounded-full flex items-center justify-center text-2xl font-bold">
+                    <span className="step-number w-16 h-16 text-white rounded-full flex items-center justify-center text-2xl font-bold">
                       2
                     </span>
                   </div>
@@ -398,9 +466,9 @@ export default function Home() {
                   <p className="text-gray-300 text-sm leading-relaxed">Avoid the red obstacles. Each hit costs a life - you only have 3!</p>
                 </div>
                 
-                <div className="text-center">
+                <div className="step-card text-center p-6 rounded-2xl">
                   <div className="flex justify-center mb-4">
-                    <span className="w-16 h-16 bg-pink-500 text-white rounded-full flex items-center justify-center text-2xl font-bold">
+                    <span className="step-number w-16 h-16 text-white rounded-full flex items-center justify-center text-2xl font-bold">
                       3
                     </span>
                   </div>
@@ -416,15 +484,15 @@ export default function Home() {
             <button
               type="button"
               onClick={handleGameClick}
-              className="button transform hover:scale-105 transition-transform duration-200"
+              className="modern-button"
             >
               <svg 
                 viewBox="0 0 16 16" 
                 fill="currentColor" 
-                height="18"
-                width="18" 
+                height="20"
+                width="20" 
                 xmlns="http://www.w3.org/2000/svg" 
-                className="game"
+                className="button-icon"
               > 
                 <path d="M11.5 6.027a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0zm-1.5 1.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm2.5-.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0zm-1.5 1.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm-6.5-3h1v1h1v1h-1v1h-1v-1h-1v-1h1v-1z"></path> 
                 <path d="M3.051 3.26a.5.5 0 0 1 .354-.613l1.932-.518a.5.5 0 0 1 .62.39c.655-.079 1.35-.117 2.043-.117.72 0 1.443.041 2.12.126a.5.5 0 0 1 .622-.399l1.932.518a.5.5 0 0 1 .306.729c.14.09.266.19.373.297.408.408.78 1.05 1.095 1.772.32.733.599 1.591.805 2.466.206.875.34 1.78.364 2.606.024.816-.059 1.602-.328 2.21a1.42 1.42 0 0 1-1.445.83c-.636-.067-1.115-.394-1.513-.773-.245-.232-.496-.526-.739-.808-.126-.148-.25-.292-.368-.423-.728-.804-1.597-1.527-3.224-1.527-1.627 0-2.496.723-3.224 1.527-.119.131-.242.275-.368.423-.243.282-.494.575-.739.808-.398.38-.877.706-1.513.773a1.42 1.42 0 0 1-1.445-.83c-.27-.608-.352-1.395-.329-2.21.024-.826.16-1.73.365-2.606.206-.875.486-1.733.805-2.466.315-.722.687-1.364 1.094-1.772a2.34 2.34 0 0 1 .433-.335.504.504 0 0 1-.028-.079zm2.036.412c-.877.185-1.469.443-1.733.708-.276.276-.587.783-.885 1.465a13.748 13.748 0 0 0-.748 2.295 12.351 12.351 0 0 0-.339 2.406c-.022.755.062 1.368.243 1.776a.42.42 0 0 0 .426.24c.327-.034.61-.199.929-.502.212-.202.4-.423.615-.674.133-.156.276-.323.44-.504C4.861 9.969 5.978 9.027 8 9.027s3.139.942 3.965 1.855c.164.181.307.348.44.504.214.251.403.472.615.674.318.303.601.468.929.503a.42.42 0 0 0 .426-.241c.18-.408.265-1.02.243-1.776a12.354 12.354 0 0 0-.339-2.406 13.753 13.753 0 0 0-.748-2.295c-.298-.682-.61-1.19-.885-1.465-.264-.265-.856-.523-1.733-.708-.85-.179-1.877-.27-2.913-.27-1.036 0-2.063.091-2.913.27z"></path>
