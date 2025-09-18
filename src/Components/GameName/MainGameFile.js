@@ -52,22 +52,6 @@ const MainGameFile = () => {
     };
   }, [mounted]);
 
-  const handleHomeClick = useCallback(() => {
-    if (typeof window !== 'undefined' && mounted) window.location.href = '/';
-  }, [mounted]);
-
-  const handleRestartClick = useCallback(() => {
-    if (phaserGameRef.current && mounted) {
-      try {
-        const scene = phaserGameRef.current.scene.getScene('JetpackGameScene');
-        if (scene) scene.scene.restart({ questions: QUESTIONS });
-      } catch (error) {
-        console.error('Error restarting game:', error);
-        setError('Failed to restart game. Please reload the page.');
-      }
-    }
-  }, [mounted]);
-
   const handleReloadClick = useCallback(() => {
     if (typeof window !== 'undefined' && mounted) window.location.reload();
   }, [mounted]);
@@ -147,7 +131,7 @@ const MainGameFile = () => {
           width: gameWidth, 
           height: gameHeight, 
           parent: gameRef.current,
-          backgroundColor: '#0a0a0f',
+          backgroundColor: '#0B1426', // Very dark blue background
           physics: { default: 'arcade', arcade: { gravity: { y: 800 }, debug: false } },
           scene: RedesignedJetpackScene,
           scale: { 
@@ -334,7 +318,7 @@ const MainGameFile = () => {
       }
 
       createRedesignedAssets() {
-        // Player texture
+        // Player texture  
         const playerGraphics = this.add.graphics();
         playerGraphics.fillStyle(0x2E86AB, 1); 
         playerGraphics.fillRoundedRect(15, 25, 35, 40, 8);
@@ -382,28 +366,32 @@ const MainGameFile = () => {
         questionCoinGraphics.generateTexture('question-coin', coinSize, coinSize); 
         questionCoinGraphics.destroy();
 
-        // Background texture - full screen
+        // Background texture - Very Dark Blue Sky (matching attached image)
         const gameWidth = this.sys.canvas.width; 
         const gameHeight = this.sys.canvas.height;
         const bgGraphics = this.add.graphics();
-        bgGraphics.fillGradientStyle(0x0B1426, 0x1A2332, 0x2D3748, 0x4A5568, 1);
+        
+        // Very Dark Blue Gradient (matching the attached image - much darker)
+        bgGraphics.fillGradientStyle(0x0B1426, 0x0F1B35, 0x1A2547, 0x243759, 1);
         bgGraphics.fillRect(0, 0, gameWidth, gameHeight);
         
-        // Stars - density based on screen size
-        const starCount = Math.min(120, 60 + (gameWidth * gameHeight / 10000));
+        // Enhanced stars for space theme - density based on screen size
+        const starCount = Math.min(150, 80 + (gameWidth * gameHeight / 8000));
         for (let i = 0; i < starCount; i++) {
           const x = Math.random() * gameWidth;
-          const y = Math.random() * (gameHeight * 0.4);
+          const y = Math.random() * (gameHeight * 0.5);
           const a = Math.random();
-          if (a > 0.7) { 
-            const starSize = a > 0.9 ? Math.max(2, 3 * this.scaleFactor) : Math.max(1, 1 * this.scaleFactor);
-            bgGraphics.fillStyle(0xFFFFFF, a); 
+          if (a > 0.6) { 
+            const starSize = a > 0.85 ? Math.max(2, 4 * this.scaleFactor) : Math.max(1, 2 * this.scaleFactor);
+            // Mix of white, blue and purple tints for very dark sky
+            const starColor = a > 0.9 ? 0xFFFFFF : (a > 0.8 ? 0xB0C4DE : 0xE6E6FA);
+            bgGraphics.fillStyle(starColor, a); 
             bgGraphics.fillCircle(x, y, starSize); 
           }
         }
         
-        // City buildings - responsive
-        const cityColor = 0x1A202C;
+        // City buildings with very dark colors - responsive
+        const cityColor = 0x0F1B35; // Much darker for very dark sky
         const buildingWidth = Math.max(50, 80 * this.scaleFactor);
         const buildingSpacing = Math.max(15, 20 * this.scaleFactor);
         const minHeight = gameHeight * 0.2;
@@ -425,7 +413,9 @@ const MainGameFile = () => {
               if (window.Phaser.Math.Between(0, 100) > 40) {
                 const wx = x + 8 + c * sx;
                 const wy = gameHeight - h + 15 + r * sy;
-                bgGraphics.fillStyle(0xFED7AA, 0.9); 
+                // Warm window colors for contrast against dark sky
+                const windowColor = window.Phaser.Math.RND.pick([0xFED7AA, 0xF6AD55, 0xE6E6FA]);
+                bgGraphics.fillStyle(windowColor, 0.8); 
                 bgGraphics.fillRoundedRect(wx, wy, windowSize, windowSize, 2);
               }
             }
@@ -463,7 +453,8 @@ const MainGameFile = () => {
 
       createRedesignedUI() {
         this.createHeartIcons();
-        const fontSize = Math.max(16, Math.min(28, 22 * this.scaleFactor));
+        // Increased font size for better readability
+        const fontSize = Math.max(18, Math.min(32, 26 * this.scaleFactor)); // Increased from 22
         const uiMargin = Math.max(20, 30 * this.scaleFactor);
         this.scoreText = this.add.text(uiMargin, Math.max(50, 65 * this.scaleFactor), 'Score: ' + this.score, { 
           fontSize: fontSize + 'px', 
@@ -511,6 +502,8 @@ const MainGameFile = () => {
         this.cursors = this.input.keyboard.createCursorKeys();
         this.spaceKey = this.input.keyboard.addKey(window.Phaser.Input.Keyboard.KeyCodes.SPACE);
         this.input.on('pointerdown', (pointer) => {
+          // Don't allow jetpack input after game over OR game results
+          if (this.gameState === 'GAME_OVER' || this.gameState === 'RESULTS') return;
           this.jetpackActive = true;
           const rippleSize = Math.max(6, 8 * this.scaleFactor);
           const ripple = this.add.circle(pointer.x, pointer.y, rippleSize, 0x68D391, 0.7);
@@ -529,6 +522,21 @@ const MainGameFile = () => {
       }
 
       update() {
+        // Don't allow player movement after game over OR game results
+        if (this.gameState === 'GAME_OVER' || this.gameState === 'RESULTS') {
+          this.player.setVelocityY(0);
+          this.player.rotation = 0;
+          this.player.setTint(0xFFFFFF);
+          this.updateUI();
+          return;
+        }
+
+        // Block space bar input after game ends
+        if ((this.spaceKey.isDown || this.jetpackActive) && 
+            (this.gameState === 'GAME_OVER' || this.gameState === 'RESULTS')) {
+          return;
+        }
+
         if (this.spaceKey.isDown || this.jetpackActive) {
           if (!this.hasStartedFlying) this.hasStartedFlying = true;
           if (this.jetpackFuel > 0) {
@@ -738,7 +746,8 @@ const MainGameFile = () => {
         this.wrongAnswers++; 
         this.questionIndex++;
         this.cameras.main.shake(400, 0.02);
-        const fontSize = Math.max(20, 28 * this.scaleFactor);
+        // Increased font size
+        const fontSize = Math.max(22, 32 * this.scaleFactor); // Increased from 28
         const skipText = this.add.text(this.player.x, this.player.y - 50, 'SKIPPED! -1 LIFE', { 
           fontSize: fontSize + 'px', 
           fill: '#F56565', 
@@ -762,163 +771,249 @@ const MainGameFile = () => {
       }
 
       showStaticQuestionUI(question) {
+        // Increased container width for better fitting
+        const gameWidth = this.sys.canvas.width;
+        const gameHeight = this.sys.canvas.height;
+        
+        // INCREASED width by 10% for better question fitting
+        const containerWidth = Math.min(
+          gameWidth * 0.95, // Increased from 0.90 to 0.95
+          this.isMobile ? Math.max(350, gameWidth - 20) : Math.max(450, 900 * this.scaleFactor) // Increased base widths
+        );
+        
+        // Dynamic height based on layout
         const maxTextLength = Math.max(...question.answers.map(a => a.length));
-        const useVerticalLayout = maxTextLength > (this.isMobile ? 20 : 25);
+        const useVerticalLayout = maxTextLength > (this.isMobile ? 15 : 20) || this.isMobile;
         
-        // Responsive container sizing - fits all screens
-        const containerWidth = Math.min(this.sys.canvas.width * 0.9, Math.max(300, 800 * this.scaleFactor));
-        const containerHeight = useVerticalLayout ? 
-          Math.max(180, 250 * this.scaleFactor) : 
-          Math.max(120, 180 * this.scaleFactor);
+        // PROPER height calculation to prevent overlaps
+        const baseHeight = useVerticalLayout ? 
+          Math.max(200, 240 * this.scaleFactor) : // Increased height for vertical
+          Math.max(180, 220 * this.scaleFactor);  // Increased height for horizontal
         
-        // Safe positioning - always visible
-        const safeMargin = Math.max(15, 30 * this.scaleFactor);
-        const containerY = safeMargin + containerHeight/2;
+        const containerHeight = Math.min(gameHeight * 0.65, baseHeight); // Increased from 0.60 to 0.65
         
-        this.questionContainer = this.add.rectangle(this.sys.canvas.width/2, containerY, containerWidth, containerHeight, 0x2D3748, 0.95);
-        this.questionContainer.setStrokeStyle(Math.max(1, 2 * this.scaleFactor), 0x68D391);
+        // Position higher to avoid coin overlap
+        const topMargin = Math.max(10, 20 * this.scaleFactor);
+        const containerY = topMargin + containerHeight/2;
         
-        const questionFontSize = Math.max(12, Math.min(24, 18 * this.scaleFactor));
-        const questionY = containerY - containerHeight/2 + Math.max(20, 30 * this.scaleFactor);
-        this.questionText = this.add.text(this.sys.canvas.width/2, questionY, question.question, { 
-          fontSize: questionFontSize + 'px', 
-          fill: '#E2E8F0', 
-          align: 'center', 
-          fontWeight: 'bold', 
-          wordWrap: { width: containerWidth * 0.9 }, 
-          fontFamily: 'Arial, sans-serif' 
-        }).setOrigin(0.5);
-
+        // Main question container
+        this.questionContainer = this.add.rectangle(
+          gameWidth/2, 
+          containerY, 
+          containerWidth, 
+          containerHeight, 
+          0x1A2332,
+          0.96
+        );
+        this.questionContainer.setStrokeStyle(
+          Math.max(2, 3 * this.scaleFactor), 
+          0x68D391,
+          0.9
+        );
+        
+        // Glow effect
+        const glowEffect = this.add.rectangle(
+          gameWidth/2, 
+          containerY, 
+          containerWidth + Math.max(4, 6 * this.scaleFactor), 
+          containerHeight + Math.max(4, 6 * this.scaleFactor), 
+          0x68D391, 
+          0.15
+        );
+        glowEffect.setStrokeStyle(1, 0x68D391, 0.3);
+        
+        // Question text - increased font size for better readability
+        const questionFontSize = Math.max(
+          this.isMobile ? 15 : 17, // Increased from 14:16
+          Math.min(this.isMobile ? 22 : 26, 22 * this.scaleFactor) // Increased from 20:24
+        );
+        const questionY = containerY - containerHeight/2 + Math.max(25, 35 * this.scaleFactor);
+        this.questionText = this.add.text(
+          gameWidth/2, 
+          questionY, 
+          question.question, 
+          { 
+            fontSize: questionFontSize + 'px', 
+            fill: '#E2E8F0',
+            align: 'center', 
+            fontWeight: 'bold', 
+            wordWrap: { width: containerWidth * 0.90 }, // Increased from 0.85 to 0.90
+            fontFamily: 'Arial, sans-serif',
+            lineSpacing: Math.max(3, 5 * this.scaleFactor)
+          }
+        ).setOrigin(0.5);
+        
+        // Answer options in A B / C D format (2x2 grid) for ALL questions
         const answerLabels = ['A', 'B', 'C', 'D'];
         const answerElements = [];
         
-        if (useVerticalLayout) {
-          const answerHeight = Math.max(25, 40 * this.scaleFactor);
-          const answerSpacing = Math.max(30, 45 * this.scaleFactor);
+        // ALWAYS use 2x2 grid layout for proper A B / C D arrangement
+        const answerWidth = Math.min(containerWidth * 0.40, Math.max(180, 220 * this.scaleFactor)); // Increased width
+        const answerHeight = Math.max(40, 50 * this.scaleFactor); // Increased height
+        
+        // PROPER grid positioning - A B on top row, C D on bottom row
+        const horizontalGap = Math.max(25, 35 * this.scaleFactor); // Increased gap
+        const verticalGap = Math.max(20, 30 * this.scaleFactor); // Increased gap
+        
+        const positions = [
+          { 
+            x: gameWidth/2 - answerWidth/2 - horizontalGap/2, 
+            y: containerY - verticalGap/2 + Math.max(10, 15 * this.scaleFactor) // A (top-left)
+          }, 
+          { 
+            x: gameWidth/2 + answerWidth/2 + horizontalGap/2, 
+            y: containerY - verticalGap/2 + Math.max(10, 15 * this.scaleFactor) // B (top-right)
+          }, 
+          { 
+            x: gameWidth/2 - answerWidth/2 - horizontalGap/2, 
+            y: containerY + answerHeight/2 + verticalGap/2 + Math.max(10, 15 * this.scaleFactor) // C (bottom-left)
+          }, 
+          { 
+            x: gameWidth/2 + answerWidth/2 + horizontalGap/2, 
+            y: containerY + answerHeight/2 + verticalGap/2 + Math.max(10, 15 * this.scaleFactor) // D (bottom-right)
+          }  
+        ];
+        
+        for (let i = 0; i < question.answers.length; i++) {
+          const pos = positions[i];
           
-          for (let i = 0; i < question.answers.length; i++) {
-            const yPos = containerY - containerHeight/2 + Math.max(60, 100 * this.scaleFactor) + (i * answerSpacing);
-            const optionBg = this.add.rectangle(this.sys.canvas.width/2, yPos, containerWidth * 0.9, answerHeight, 0x1A202C, 0.6);
-            optionBg.setStrokeStyle(1, 0x68D391, 0.5);
-            
-            const labelFontSize = Math.max(12, Math.min(22, 20 * this.scaleFactor));
-            const answerFontSize = Math.max(10, Math.min(18, 14 * this.scaleFactor));
-            const label = this.add.text(this.sys.canvas.width/2 - containerWidth * 0.35, yPos, answerLabels[i], { 
+          // Answer background
+          const optionBg = this.add.rectangle(
+            pos.x, 
+            pos.y, 
+            answerWidth, 
+            answerHeight, 
+            0x2D3748, 
+            0.85
+          );
+          optionBg.setStrokeStyle(
+            Math.max(1, 2 * this.scaleFactor), 
+            0x4A5568, 
+            0.7
+          );
+          
+          // Answer label (A, B, C, D) - increased font size
+          const labelFontSize = Math.max(14, Math.min(22, 18 * this.scaleFactor)); // Increased from 13:20
+          const label = this.add.text(
+            pos.x - answerWidth * 0.35,
+            pos.y, 
+            answerLabels[i], 
+            { 
               fontSize: labelFontSize + 'px', 
               fill: '#F6AD55', 
               fontWeight: 'bold', 
-              fontFamily: 'Arial, sans-serif' 
-            }).setOrigin(0.5);
-            const answerText = this.add.text(this.sys.canvas.width/2, yPos, question.answers[i], { 
+              fontFamily: 'Arial, sans-serif',
+              stroke: '#1A202C',
+              strokeThickness: 1
+            }
+          ).setOrigin(0.5);
+          
+          // Answer text - increased font size
+          const answerFontSize = Math.max(12, Math.min(18, 14 * this.scaleFactor)); // Increased from 11:16
+          const answerText = this.add.text(
+            pos.x + Math.max(10, 15 * this.scaleFactor), 
+            pos.y, 
+            question.answers[i], 
+            { 
               fontSize: answerFontSize + 'px', 
               fill: '#E2E8F0', 
               align: 'center', 
-              fontWeight: 'bold', 
-              wordWrap: { width: containerWidth * 0.7 }, 
-              fontFamily: 'Arial, sans-serif' 
-            }).setOrigin(0.5);
-            answerElements.push({ bg: optionBg, label, text: answerText, index: i, answer: question.answers[i] });
-          }
-        } else {
-          const gridSpacing = Math.max(60, 120 * this.scaleFactor);
-          const answerWidth = Math.max(140, 200 * this.scaleFactor);
-          const answerHeight = Math.max(35, 45 * this.scaleFactor);
+              fontWeight: '600',
+              wordWrap: { width: answerWidth * 0.65 }, // Increased from 0.60
+              fontFamily: 'Arial, sans-serif',
+              lineSpacing: 1
+            }
+          ).setOrigin(0.5);
           
-          const positions = [
-            { x: this.sys.canvas.width/2 - gridSpacing, y: containerY - containerHeight/2 + Math.max(60, 90 * this.scaleFactor) }, 
-            { x: this.sys.canvas.width/2 + gridSpacing, y: containerY - containerHeight/2 + Math.max(60, 90 * this.scaleFactor) }, 
-            { x: this.sys.canvas.width/2 - gridSpacing, y: containerY - containerHeight/2 + Math.max(100, 140 * this.scaleFactor) }, 
-            { x: this.sys.canvas.width/2 + gridSpacing, y: containerY - containerHeight/2 + Math.max(100, 140 * this.scaleFactor) }
-          ];
-          
-          for (let i = 0; i < question.answers.length; i++) {
-            const pos = positions[i];
-            const optionBg = this.add.rectangle(pos.x, pos.y, answerWidth, answerHeight, 0x1A202C, 0.6);
-            optionBg.setStrokeStyle(1, 0x68D391, 0.5);
-            
-            const labelFontSize = Math.max(10, Math.min(20, 18 * this.scaleFactor));
-            const answerFontSize = Math.max(8, Math.min(16, 12 * this.scaleFactor));
-            const label = this.add.text(pos.x - answerWidth * 0.35, pos.y, answerLabels[i], { 
-              fontSize: labelFontSize + 'px', 
-              fill: '#F6AD55', 
-              fontWeight: 'bold', 
-              fontFamily: 'Arial, sans-serif' 
-            }).setOrigin(0.5);
-            const answerText = this.add.text(pos.x, pos.y, question.answers[i], { 
-              fontSize: answerFontSize + 'px', 
-              fill: '#E2E8F0', 
-              align: 'center', 
-              fontWeight: 'bold', 
-              wordWrap: { width: answerWidth * 0.8 }, 
-              fontFamily: 'Arial, sans-serif' 
-            }).setOrigin(0.5);
-            answerElements.push({ bg: optionBg, label, text: answerText, index: i, answer: question.answers[i] });
-          }
+          answerElements.push({ 
+            bg: optionBg, 
+            label, 
+            text: answerText, 
+            index: i, 
+            answer: question.answers[i] 
+          });
         }
-        this.currentQuestionElements = [this.questionContainer, this.questionText, ...answerElements.flatMap(e => [e.bg, e.label, e.text])];
+        
+        // Store elements for cleanup
+        this.currentQuestionElements = [
+          glowEffect,
+          this.questionContainer, 
+          this.questionText, 
+          ...answerElements.flatMap(e => [e.bg, e.label, e.text])
+        ];
         this.currentAnswerElements = answerElements;
+        
+        // Animation
+        this.tweens.add({
+          targets: [this.questionContainer, glowEffect],
+          alpha: { from: 0, to: this.questionContainer.alpha },
+          scaleX: { from: 0.95, to: 1 },
+          scaleY: { from: 0.95, to: 1 },
+          duration: 500,
+          ease: 'Back.easeOut'
+        });
       }
 
       spawnMovingCoins(question) {
-  this.questionCoins = [];
-  const coinSpeed = -180;
-  const answerLabels = ['A', 'B', 'C', 'D'];
-  
-  // FIXED: Mobile-laptop perfect alignment
-  const verticalSpacing = Math.max(60, 80 * this.scaleFactor);
-  const horizontalOffset = Math.max(80, 120 * this.scaleFactor);
-  
-  // CRITICAL FIX: Same positioning logic for both mobile and desktop
-  const baseY = this.sys.canvas.height * 0.55;
-  const staircaseOffsets = [
-    { x: 0, y: -verticalSpacing * 1.5 },                    // A
-    { x: horizontalOffset * 0.7, y: -verticalSpacing * 0.5 }, // B  
-    { x: horizontalOffset * 1.4, y: verticalSpacing * 0.5 },   // C
-    { x: horizontalOffset * 2.1, y: verticalSpacing * 1.5 }    // D (target)
-  ];
-  
-  for (let i = 0; i < question.answers.length; i++) {
-    const startX = this.sys.canvas.width + 150 + staircaseOffsets[i].x;
-    const yPos = baseY + staircaseOffsets[i].y;
-    const clampedY = Math.max(60, Math.min(this.sys.canvas.height - 60, yPos));
-    
-    const coinSprite = this.add.sprite(startX, clampedY, 'question-coin'); 
-    coinSprite.setScale(Math.max(0.8, 1.1 * this.scaleFactor));
-    
-    const coinLabelFontSize = Math.max(14, Math.min(24, 20 * this.scaleFactor));
-    const coinLabel = this.add.text(startX, clampedY, answerLabels[i], { 
-      fontSize: coinLabelFontSize + 'px', 
-      fill: '#A16207', 
-      fontWeight: 'bold', 
-      fontFamily: 'Arial, sans-serif' 
-    }).setOrigin(0.5);
-    
-    const coinData = { 
-      sprite: coinSprite, 
-      label: coinLabel, 
-      answerIndex: i, 
-      answerText: question.answers[i], 
-      speed: coinSpeed, 
-      isActive: true 
-    };
-    this.questionCoins.push(coinData);
-    
-    this.tweens.add({ 
-      targets: coinSprite, 
-      scaleX: Math.max(0.9, 1.2 * this.scaleFactor), 
-      scaleY: Math.max(0.9, 1.2 * this.scaleFactor), 
-      duration: 900, 
-      yoyo: true, 
-      repeat: -1, 
-      ease: 'Sine.easeInOut' 
-    });
-  }
-  
-  // CRITICAL FIX: Set player target to coin D position
-  this.hoverTargetY = baseY + staircaseOffsets[3].y;
-  this.time.delayedCall(800, () => this.showCleanInstruction());
-}
-
+        this.questionCoins = [];
+        const coinSpeed = -180;
+        const answerLabels = ['A', 'B', 'C', 'D'];
+        
+        // MODIFIED: Bringing coins down to avoid overlap with question container
+        const verticalSpacing = Math.max(60, 80 * this.scaleFactor);
+        const horizontalOffset = Math.max(80, 120 * this.scaleFactor);
+        
+        // Moved baseY down significantly to avoid overlap
+        const baseY = this.sys.canvas.height * 0.65; // Changed from 0.55 to 0.65
+        const staircaseOffsets = [
+          { x: 0, y: -verticalSpacing * 1.2 },                    // A (moved down)
+          { x: horizontalOffset * 0.7, y: -verticalSpacing * 0.3 }, // B (moved down)  
+          { x: horizontalOffset * 1.4, y: verticalSpacing * 0.7 },   // C (moved down)
+          { x: horizontalOffset * 2.1, y: verticalSpacing * 1.7 }    // D (moved down)
+        ];
+        
+        for (let i = 0; i < question.answers.length; i++) {
+          const startX = this.sys.canvas.width + 150 + staircaseOffsets[i].x;
+          const yPos = baseY + staircaseOffsets[i].y;
+          const clampedY = Math.max(80, Math.min(this.sys.canvas.height - 80, yPos)); // Adjusted clamp values
+          
+          const coinSprite = this.add.sprite(startX, clampedY, 'question-coin'); 
+          coinSprite.setScale(Math.max(0.8, 1.1 * this.scaleFactor));
+          
+          // Increased coin label font size
+          const coinLabelFontSize = Math.max(16, Math.min(28, 24 * this.scaleFactor)); // Increased from 14:24
+          const coinLabel = this.add.text(startX, clampedY, answerLabels[i], { 
+            fontSize: coinLabelFontSize + 'px', 
+            fill: '#A16207', 
+            fontWeight: 'bold', 
+            fontFamily: 'Arial, sans-serif' 
+          }).setOrigin(0.5);
+          
+          const coinData = { 
+            sprite: coinSprite, 
+            label: coinLabel, 
+            answerIndex: i, 
+            answerText: question.answers[i], 
+            speed: coinSpeed, 
+            isActive: true 
+          };
+          this.questionCoins.push(coinData);
+          
+          this.tweens.add({ 
+            targets: coinSprite, 
+            scaleX: Math.max(0.9, 1.2 * this.scaleFactor), 
+            scaleY: Math.max(0.9, 1.2 * this.scaleFactor), 
+            duration: 900, 
+            yoyo: true, 
+            repeat: -1, 
+            ease: 'Sine.easeInOut' 
+          });
+        }
+        
+        // Set player target to coin D position
+        this.hoverTargetY = baseY + staircaseOffsets[3].y;
+        this.time.delayedCall(800, () => this.showCleanInstruction());
+      }
 
       updateMovingQuestionCoins() {
         if (this.gameState !== 'QUESTION_ACTIVE') return;
@@ -927,7 +1022,12 @@ const MainGameFile = () => {
           if (!coin.isActive) return;
           coin.sprite.x += coin.speed * dt; 
           coin.label.x += coin.speed * dt;
-          if (coin.sprite.x < -100) coin.isActive = false;
+          
+          // MODIFIED: Disappear before going off-screen (when x < 50 instead of -100)
+          if (coin.sprite.x < 50) {
+            this.animateAllCoinsDisappear(); // Make all coins disappear
+            return;
+          }
         });
       }
 
@@ -960,25 +1060,66 @@ const MainGameFile = () => {
         const question = this.questions[this.questionIndex];
         const selectedAnswer = coinData.answerText;
         const isCorrect = selectedAnswer === question.correctAnswer;
-        this.animateCoinDisappear(coinData);
+        
+        // MODIFIED: Animate all coins to disappear after collision
+        this.animateAllCoinsDisappear();
+        
         if (isCorrect) this.handleCorrectAnswer(coinIndex); 
         else this.handleWrongAnswer(coinIndex, question.correctAnswer);
       }
 
+      // NEW METHOD: Animate all coins to disappear with same effect as collided coin
+      animateAllCoinsDisappear() {
+        this.questionCoins.forEach(coin => {
+          if (coin.isActive && coin.sprite.active && coin.label.active) {
+            this.animateCoinDisappear(coin);
+          }
+        });
+      }
+
+      // Enhanced GSAP animation for coin disappearing
       animateCoinDisappear(coinData) {
         if (window.gsap) {
+          // Enhanced GSAP animation with more dramatic effects
           window.gsap.to([coinData.sprite, coinData.label], { 
-            duration: 0.6, 
+            duration: 0.8, // Slightly longer duration
             scale: 0, 
-            rotation: Math.PI * 2, 
+            rotation: Math.PI * 3, // More rotations
             alpha: 0, 
-            ease: "bounce.out", 
+            ease: "elastic.out(1, 0.3)", // More bouncy effect
             onComplete: () => { 
               if (coinData.sprite.active) coinData.sprite.destroy(); 
               if (coinData.label.active) coinData.label.destroy(); 
             } 
           });
+          
+          // Additional sparkle effect
+          const sparkleCount = 8;
+          for (let i = 0; i < sparkleCount; i++) {
+            const angle = (i / sparkleCount) * Math.PI * 2;
+            const distance = 40;
+            const sparkle = this.add.circle(
+              coinData.sprite.x, 
+              coinData.sprite.y, 
+              3, 
+              0xFFD700, 
+              0.8
+            );
+            
+            window.gsap.to(sparkle, {
+              duration: 0.6,
+              x: coinData.sprite.x + Math.cos(angle) * distance,
+              y: coinData.sprite.y + Math.sin(angle) * distance,
+              alpha: 0,
+              scale: 0.2,
+              ease: "power2.out",
+              onComplete: () => {
+                if (sparkle.active) sparkle.destroy();
+              }
+            });
+          }
         } else {
+          // Fallback Phaser animation
           this.tweens.add({ 
             targets: [coinData.sprite, coinData.label], 
             scaleX: 0, 
@@ -1005,7 +1146,8 @@ const MainGameFile = () => {
         this.correctAnswers++; 
         this.questionIndex++; 
         this.nextQuestionDistance = this.distance + this.questionInterval;
-        const scoreFontSize = Math.max(20, Math.min(40, 36 * this.scaleFactor));
+        // Increased font size for score popup
+        const scoreFontSize = Math.max(24, Math.min(44, 40 * this.scaleFactor)); // Increased from 20:40
         const scorePopup = this.add.text(this.player.x, this.player.y - 50, '+25', { 
           fontSize: scoreFontSize + 'px', 
           fill: '#68D391', 
@@ -1034,8 +1176,9 @@ const MainGameFile = () => {
         this.wrongAnswers++; 
         this.questionIndex++; 
         this.nextQuestionDistance = this.distance + this.questionInterval;
-        const damageFontSize = Math.max(18, Math.min(32, 28 * this.scaleFactor));
-        const damageText = this.add.text(this.player.x, this.player.y - 50, '-1 LIFE', { 
+        // Increased font size for damage text
+        const damageFontSize = Math.max(20, Math.min(36, 32 * this.scaleFactor)); // Increased from 18:32
+                const damageText = this.add.text(this.player.x, this.player.y - 50, '-1 LIFE', { 
           fontSize: damageFontSize + 'px', 
           fill: '#F56565', 
           fontWeight: 'bold', 
@@ -1100,6 +1243,7 @@ const MainGameFile = () => {
           this.questionTimeout.remove(); 
           this.questionTimeout = null; 
         }
+
         if (this.currentQuestionElements && this.currentQuestionElements.length > 0) {
           this.currentQuestionElements.forEach(el => {
             if (el && el.active) {
@@ -1116,6 +1260,7 @@ const MainGameFile = () => {
           });
           this.currentQuestionElements = [];
         }
+              
         if (this.currentInstructionText && this.currentInstructionText.active) {
           this.tweens.add({ 
             targets: this.currentInstructionText, 
@@ -1129,23 +1274,29 @@ const MainGameFile = () => {
             } 
           });
         }
-        this.questionCoins.forEach(coin => { 
-          if (coin.sprite.active) coin.sprite.destroy(); 
-          if (coin.label.active) coin.label.destroy(); 
+
+        // Clear remaining coins (they should already be animated away)
+        this.questionCoins.forEach(coin => {
+          if (coin.sprite.active) coin.sprite.destroy();
+          if (coin.label.active) coin.label.destroy();
         });
+        
         this.questionCoins = []; 
         this.currentAnswerElements = [];
+
         if (this.questionIndex >= this.questions.length) { 
           this.time.delayedCall(800, () => this.showResults()); 
           return; 
         }
+
         this.time.delayedCall(1000, () => { 
           this.gameState = 'PLAYING'; 
         });
       }
 
       showCleanInstruction() {
-        const instructionFontSize = Math.max(10, Math.min(20, 16 * this.scaleFactor));
+        // Increased font size for instruction
+        const instructionFontSize = Math.max(12, Math.min(24, 20 * this.scaleFactor)); // Increased from 10:20
         const instructionY = this.sys.canvas.height - Math.max(30, 50 * this.scaleFactor);
         const instruction = this.add.text(this.sys.canvas.width/2, instructionY, 'Fly through the correct coin to answer!', { 
           fontSize: instructionFontSize + 'px', 
@@ -1196,8 +1347,8 @@ const MainGameFile = () => {
         const cardBg = this.add.rectangle(0, 0, cardWidth, cardHeight, 0x1A202C, 1);
         cardBg.setStrokeStyle(Math.max(3, 6 * this.scaleFactor), passed ? 0x68D391 : 0xF56565, 1);
 
-        // Responsive typography - always readable
-        const titleFontSize = Math.max(16, Math.min(36, 32 * this.scaleFactor));
+        // Increased font sizes for end screen
+        const titleFontSize = Math.max(18, Math.min(40, 36 * this.scaleFactor)); // Increased from 16:36
         const title = this.add.text(0, -cardHeight/2 + Math.max(40, 60 * this.scaleFactor), passed ? 'MISSION COMPLETED' : 'MISSION FAILED', { 
           fontSize: titleFontSize + 'px', 
           fill: '#E2E8F0', 
@@ -1205,7 +1356,7 @@ const MainGameFile = () => {
           fontFamily: 'Arial, sans-serif' 
         }).setOrigin(0.5);
         
-        const scoreLabelFontSize = Math.max(12, Math.min(22, 18 * this.scaleFactor));
+        const scoreLabelFontSize = Math.max(14, Math.min(26, 22 * this.scaleFactor)); // Increased from 12:22
         const scoreLabel = this.add.text(0, -cardHeight/2 + Math.max(80, 120 * this.scaleFactor), 'FINAL SCORE', { 
           fontSize: scoreLabelFontSize + 'px', 
           fill: '#9CA3AF', 
@@ -1213,7 +1364,7 @@ const MainGameFile = () => {
           fontFamily: 'Arial, sans-serif' 
         }).setOrigin(0.5);
         
-        const scoreValueFontSize = Math.max(24, Math.min(56, 48 * this.scaleFactor));
+        const scoreValueFontSize = Math.max(28, Math.min(60, 52 * this.scaleFactor)); // Increased from 24:56
         const scoreValue = this.add.text(0, -cardHeight/2 + Math.max(110, 155 * this.scaleFactor), `${this.score}`, { 
           fontSize: scoreValueFontSize + 'px', 
           fill: '#68D391', 
@@ -1221,13 +1372,13 @@ const MainGameFile = () => {
           fontFamily: 'Arial, sans-serif' 
         }).setOrigin(0.5);
 
-        // Stats section - responsive
+        // Stats section - increased font sizes
         const statsBgHeight = Math.max(80, 120 * this.scaleFactor);
         const statsBg = this.add.rectangle(0, -cardHeight/2 + Math.max(180, 250 * this.scaleFactor), cardWidth - Math.max(20, 40 * this.scaleFactor), statsBgHeight, 0x2C3A50, 1);
         statsBg.setStrokeStyle(Math.max(1, 2 * this.scaleFactor), 0x4A5568, 1);
 
-        const statFontSize = Math.max(14, Math.min(28, 24 * this.scaleFactor));
-        const labelFontSize = Math.max(10, Math.min(18, 14 * this.scaleFactor));
+        const statFontSize = Math.max(16, Math.min(32, 28 * this.scaleFactor)); // Increased from 14:28
+        const labelFontSize = Math.max(12, Math.min(20, 16 * this.scaleFactor)); // Increased from 10:18
         const statSpacing = cardWidth/4;
         
         const correctStat = this.add.text(-statSpacing, -cardHeight/2 + Math.max(170, 240 * this.scaleFactor), `${this.correctAnswers}`, { 
@@ -1263,7 +1414,7 @@ const MainGameFile = () => {
         const progressWidth = Math.max(10, (this.questionIndex / this.questions.length) * progressBarWidth);
         const progressFill = this.add.rectangle(-progressBarWidth/2 + progressWidth/2, -cardHeight/2 + Math.max(240, 330 * this.scaleFactor), progressWidth, progressBarHeight, 0x68D391, 1);
         
-        const progressTextFontSize = Math.max(10, Math.min(20, 16 * this.scaleFactor));
+        const progressTextFontSize = Math.max(12, Math.min(24, 20 * this.scaleFactor)); // Increased from 10:20
         const progressText = this.add.text(0, -cardHeight/2 + Math.max(270, 360 * this.scaleFactor), `${this.questionIndex} / ${this.questions.length} QUESTIONS`, { 
           fontSize: progressTextFontSize + 'px', 
           fill: '#E2E8F0', 
@@ -1271,7 +1422,7 @@ const MainGameFile = () => {
           fontFamily: 'Arial, sans-serif' 
         }).setOrigin(0.5);
 
-        const statusFontSize = Math.max(12, Math.min(24, 20 * this.scaleFactor));
+        const statusFontSize = Math.max(14, Math.min(28, 24 * this.scaleFactor)); // Increased from 12:24
         const statusText = this.add.text(0, -cardHeight/2 + Math.max(310, 400 * this.scaleFactor), passed ? 'EXCELLENT WORK' : 'KEEP PRACTICING', { 
           fontSize: statusFontSize + 'px', 
           fill: passed ? '#68D391' : '#F6AD55', 
@@ -1279,13 +1430,12 @@ const MainGameFile = () => {
           fontFamily: 'Arial, sans-serif' 
         }).setOrigin(0.5);
 
-        // Responsive buttons - always fit
-        const buttonWidth = Math.min(cardWidth/2.8, Math.max(100, 160 * this.scaleFactor));
+        // Responsive button - increased font size (ONLY PLAY AGAIN BUTTON)
+        const buttonWidth = Math.min(cardWidth/2, Math.max(140, 200 * this.scaleFactor));
         const buttonHeight = Math.max(35, 50 * this.scaleFactor);
-        const buttonFontSize = Math.max(10, Math.min(18, 16 * this.scaleFactor));
-        const buttonSpacing = Math.max(10, 20 * this.scaleFactor);
+        const buttonFontSize = Math.max(12, Math.min(20, 18 * this.scaleFactor)); // Increased from 10:18
 
-        const restartBtn = this.add.container(-buttonWidth/2 - buttonSpacing/2, cardHeight/2 - Math.max(50, 80 * this.scaleFactor));
+        const restartBtn = this.add.container(0, cardHeight/2 - Math.max(50, 80 * this.scaleFactor));
         const restartBg = this.add.rectangle(0, 0, buttonWidth, buttonHeight, passed ? 0x68D391 : 0xF56565, 1);
         restartBg.setStrokeStyle(Math.max(2, 3 * this.scaleFactor), passed ? 0x5BB585 : 0xE04848, 1);
         const restartTxt = this.add.text(0, 0, 'PLAY AGAIN', { 
@@ -1297,18 +1447,6 @@ const MainGameFile = () => {
         restartBtn.add([restartBg, restartTxt]);
         restartBtn.setInteractive(new window.Phaser.Geom.Rectangle(-buttonWidth/2, -buttonHeight/2, buttonWidth, buttonHeight), window.Phaser.Geom.Rectangle.Contains);
 
-        const homeBtn = this.add.container(buttonWidth/2 + buttonSpacing/2, cardHeight/2 - Math.max(50, 80 * this.scaleFactor));
-        const homeBg = this.add.rectangle(0, 0, buttonWidth, buttonHeight, 0x202F47, 1);
-        homeBg.setStrokeStyle(Math.max(2, 3 * this.scaleFactor), passed ? 0x68D391 : 0xF56565, 1);
-        const homeTxt = this.add.text(0, 0, 'HOME', { 
-          fontSize: buttonFontSize + 'px', 
-          fill: passed ? '#68D391' : '#F56565', 
-          fontWeight: 'bold', 
-          fontFamily: 'Arial, sans-serif' 
-        }).setOrigin(0.5);
-        homeBtn.add([homeBg, homeTxt]);
-        homeBtn.setInteractive(new window.Phaser.Geom.Rectangle(-buttonWidth/2, -buttonHeight/2, buttonWidth, buttonHeight), window.Phaser.Geom.Rectangle.Contains);
-
         // Button interactions
         restartBtn.on('pointerover', () => { 
           this.tweens.add({ targets: restartBtn, scaleX: 1.05, scaleY: 1.05, duration: 200 }); 
@@ -1318,26 +1456,13 @@ const MainGameFile = () => {
           this.tweens.add({ targets: restartBtn, scaleX: 1, scaleY: 1, duration: 200 }); 
           restartBg.setFillStyle(passed ? 0x68D391 : 0xF56565); 
         });
-        homeBtn.on('pointerover', () => { 
-          this.tweens.add({ targets: homeBtn, scaleX: 1.05, scaleY: 1.05, duration: 200 }); 
-          homeBg.setFillStyle(0x4A5568); 
-          homeTxt.setFill('#E2E8F0');
-        });
-        homeBtn.on('pointerout', () => { 
-          this.tweens.add({ targets: homeBtn, scaleX: 1, scaleY: 1, duration: 200 }); 
-          homeBg.setFillStyle(0x202F47); 
-          homeTxt.setFill(passed ? '#68D391' : '#F56565');
-        });
 
         restartBtn.on('pointerdown', () => { 
           if (this.setPauseVisibilityCallback) this.setPauseVisibilityCallback(true); 
           this.scene.restart({ questions: this.questions }); 
         });
-        homeBtn.on('pointerdown', () => { 
-          if (typeof window !== 'undefined') window.location.href = '/'; 
-        });
 
-        container.add([overlay, cardBg, title, scoreLabel, scoreValue, statsBg, correctStat, correctLabel, wrongStat, wrongLabel, progressBg, progressFill, progressText, statusText, restartBtn, homeBtn]);
+        container.add([overlay, cardBg, title, scoreLabel, scoreValue, statsBg, correctStat, correctLabel, wrongStat, wrongLabel, progressBg, progressFill, progressText, statusText, restartBtn]);
         container.setAlpha(0); 
         container.setScale(0.8);
         this.tweens.add({ targets: container, alpha: 1, scaleX: 1, scaleY: 1, duration: 800, ease: 'Back.easeOut' });
@@ -1363,7 +1488,7 @@ const MainGameFile = () => {
       left: 0,
       width: '100vw',
       height: '100vh',
-      backgroundColor: 'rgba(0, 0, 0, 0.95)',
+      background: 'linear-gradient(135deg, #0B1426, #0F1B35, #1A2547)', // Very dark blue gradient
       zIndex: 9999,
       display: 'flex',
       flexDirection: 'column',
@@ -1435,52 +1560,298 @@ const MainGameFile = () => {
 
   const pencilStyles = `.pencil{width:150px!important;height:150px!important;display:block}.pencil__body1,.pencil__body2,.pencil__body3,.pencil__eraser,.pencil__eraser-skew,.pencil__point,.pencil__rotate,.pencil__stroke{animation-duration:3s;animation-timing-function:linear;animation-iteration-count:infinite}.pencil__body1,.pencil__body2,.pencil__body3{transform:rotate(-90deg)}.pencil__body1{animation-name:pencilBody1}.pencil__body2{animation-name:pencilBody2}.pencil__body3{animation-name:pencilBody3}.pencil__eraser{animation-name:pencilEraser;transform:rotate(-90deg) translate(49px,0)}.pencil__eraser-skew{animation-name:pencilEraserSkew;animation-timing-function:ease-in-out}.pencil__point{animation-name:pencilPoint;transform:rotate(-90) translate(49px,-30px)}.pencil__rotate{animation-name:pencilRotate}.pencil__stroke{animation-name:pencilStroke;transform:translate(100px,100px) rotate(-113deg)}@keyframes pencilBody1{from,to{stroke-dashoffset:351.86;transform:rotate(-90deg)}50%{stroke-dashoffset:150.8;transform:rotate(-225deg)}}@keyframes pencilBody2{from,to{stroke-dashoffset:406.84;transform:rotate(-90deg)}50%{stroke-dashoffset:174.36;transform:rotate(-225deg)}}@keyframes pencilBody3{from,to{stroke-dashoffset:296.88;transform:rotate(-90deg)}50%{stroke-dashoffset:127.23;transform:rotate(-225deg)}}@keyframes pencilEraser{from,to{transform:rotate(-45deg) translate(49px,0)}50%{transform:rotate(0deg) translate(49px,0)}}@keyframes pencilEraserSkew{from,32.5%,67.5%,to{transform:skewX(0)}35%,65%{transform:skewX(-4deg)}37.5%,62.5%{transform:skewX(8deg)}40%,45%,50%,55%,60%{transform:skewX(-15deg)}42.5%,47.5%,52.5%,57.5%{transform:skewX(15deg)}}@keyframes pencilPoint{from,to{transform:rotate(-90deg) translate(49px,-30px)}50%{transform:rotate(-225deg) translate(49px,-30px)}}@keyframes pencilRotate{from{transform:translate(100px,100px) rotate(0)}to{transform:translate(100px,100px) rotate(720deg)}}@keyframes pencilStroke{from{stroke-dashoffset:439.82;transform:translate(100px,100px) rotate(-113deg)}50%{stroke-dashoffset:164.93;transform:translate(100px,100px) rotate(-113deg)}75%,to{stroke-dashoffset:439.82;transform:translate(100px,100px) rotate(112deg)}}`;
 
-  const pauseButtonStyles = `.container{--color:white;--size:45px;display:flex;justify-content:center;align-items:center;position:relative;cursor:pointer;font-size:var(--size);user-select:none;fill:var(--color);width:60px;height:60px;background:linear-gradient(45deg,#68D391,#4FD1C7);border-radius:12px;border:3px solid #2D3748;box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:all 0.3s ease}.container:hover{transform:scale(1.05);box-shadow:0 6px 16px rgba(0,0,0,0.4)}.container:active{transform:scale(0.95)}.container .play{position:absolute;animation:keyframes-fill 0.3s}.container .pause{position:absolute;display:none;animation:keyframes-fill 0.3s}.container input:checked ~ .play{display:none}.container input:checked ~ .pause{display:block}.container input{position:absolute;opacity:0;cursor:pointer;height:0;width:0}@keyframes keyframes-fill{0%{transform:scale(0);opacity:0}50%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}`;
+  const pauseButtonStyles = `.container{--color:white;--size:45px;display:flex;justify-content:center;align-items:center;position:relative;cursor:pointer;font-size:var(--size);user-select:none}.container .pause{display:block}.container .play{display:none}.container input{position:absolute;opacity:0;cursor:pointer;height:0;width:0}.container input:checked~.pause{display:none}.container input:checked~.play{display:block}.pause rect{fill:var(--color)}.play polygon{fill:var(--color)}`;
 
-  // Show rotate prompt for mobile portrait mode
-  if (showRotatePrompt) {
-    return React.createElement(RotatePrompt);
-  }
+  if (showRotatePrompt) return React.createElement(RotatePrompt);
 
-  if (!mounted) {
-    return React.createElement('div', { style: { display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'linear-gradient(45deg, #0B1426, #1A2332)', color: 'white', fontFamily: 'Arial, sans-serif' } }, [
-      React.createElement('style', { key: 'pencil-styles' }, pencilStyles),
-      React.createElement('div', { key: 'loader-container', style: { width: '150px', height: '150px', display: 'flex', justifyContent: 'center', alignItems: 'center' } }, [LoaderSVG()]),
-      React.createElement('div', { key: 'loading-text', style: { fontSize: '24px', marginBottom: '10px', marginTop: '20px' } }, 'Loading Quest Flight...'),
-      React.createElement('div', { key: 'preparing-text', style: { fontSize: '16px', opacity: 0.7 } }, 'Preparing systems...')
-    ]);
-  }
+  return React.createElement('div', {
+    style: {
+      width: '100vw',
+      height: '100vh',
+      margin: 0,
+      padding: 0,
+      overflow: 'hidden',
+      position: 'relative',
+      background: 'linear-gradient(135deg, #0B1426, #0F1B35, #1A2547, #243759)', // Very dark blue gradient
+      fontFamily: 'Arial, sans-serif'
+    }
+  }, [
+    React.createElement('style', { key: 'pencil-styles', dangerouslySetInnerHTML: { __html: pencilStyles } }),
+    React.createElement('style', { key: 'pause-styles', dangerouslySetInnerHTML: { __html: pauseButtonStyles } }),
+    
+    // Game container
+    React.createElement('div', {
+      key: 'game-area',
+      ref: gameRef,
+      style: {
+        width: '100%',
+        height: '100%',
+        position: 'relative'
+      }
+    }),
 
-  if (error) {
-    return React.createElement('div', { style: { display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'linear-gradient(45deg, #1A202C, #2D3748)', color: 'white', fontFamily: 'Arial, sans-serif', padding: '20px', textAlign: 'center' } }, [
-      React.createElement('div', { key: 'error-title', style: { fontSize: '32px', marginBottom: '20px' } }, 'Game Error'),
-      React.createElement('div', { key: 'error-message', style: { fontSize: '18px', marginBottom: '30px', maxWidth: '600px' } }, error),
-      React.createElement('div', { key: 'error-buttons', style: { display: 'flex', gap: '15px' } }, [
-        React.createElement('button', { key: 'reload-btn', onClick: handleReloadClick, style: { padding: '12px 24px', fontSize: '16px', backgroundColor: '#68D391', color: '#1A202C', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' } }, 'Reload Game'),
-        React.createElement('button', { key: 'home-btn', onClick: handleHomeClick, style: { padding: '12px 24px', fontSize: '16px', backgroundColor: '#2D3748', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' } }, 'Home')
-      ])
-    ]);
-  }
-
-  return React.createElement('div', { style: { width: '100%', height: '100vh', overflow: 'hidden', background: 'linear-gradient(45deg, #0B1426, #1A2332)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' } }, [
-    isLoading && React.createElement('div', { key: 'loading-overlay', style: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: 'linear-gradient(45deg, #0B1426, #1A2332)', color: 'white', fontSize: '24px', fontFamily: 'Arial, sans-serif', zIndex: 1000 } }, [
-      React.createElement('style', { key: 'overlay-pencil-styles' }, pencilStyles),
-      React.createElement('div', { key: 'overlay-loader-container', style: { width: '150px', height: '150px', display: 'flex', justifyContent: 'center', alignItems: 'center' } }, [LoaderSVG()]),
-      React.createElement('div', { key: 'overlay-loading-text', style: { fontSize: '24px', marginBottom: '10px', marginTop: '20px' } }, 'Loading Quest Flight...'),
-      React.createElement('div', { key: 'overlay-preparing-text', style: { fontSize: '16px', opacity: 0.7 } }, 'Preparing systems...')
+    // Loading screen
+    isLoading && React.createElement('div', {
+      key: 'loading',
+      style: {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'linear-gradient(135deg, #0B1426, #0F1B35, #1A2547, #243759)', // Very dark blue gradient
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        color: '#E2E8F0'
+      }
+    }, [
+      React.createElement(LoaderSVG, { key: 'loader-svg' }),
+      React.createElement('div', {
+        key: 'loading-text',
+        style: {
+          marginTop: '30px',
+          fontSize: '1.3rem',
+          fontWeight: 'bold',
+          color: '#68D391'
+        }
+      }, 'Loading Jetpack Quiz Adventure...'),
+      React.createElement('div', {
+        key: 'loading-subtext',
+        style: {
+          marginTop: '10px',
+          fontSize: '0.95rem',
+          opacity: 0.7,
+          textAlign: 'center',
+          maxWidth: '300px',
+          lineHeight: 1.4
+        }
+      }, 'Preparing your quiz adventure with enhanced graphics and smooth gameplay')
     ]),
 
-    React.createElement('div', { key: 'game-container', ref: gameRef, style: { width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' } }),
+    // Error screen
+    error && React.createElement('div', {
+      key: 'error',
+      style: {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'linear-gradient(135deg, #1A202C, #2D3748)', 
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        color: '#E2E8F0',
+        padding: '20px',
+        textAlign: 'center'
+      }
+    }, [
+      React.createElement('div', {
+        key: 'error-icon',
+        style: {
+          fontSize: '4rem',
+          marginBottom: '20px',
+          color: '#F56565'
+        }
+      }, '⚠️'),
+      React.createElement('h2', {
+        key: 'error-title',
+        style: {
+          fontSize: '1.5rem',
+          marginBottom: '15px',
+          color: '#F56565'
+        }
+      }, 'Oops! Something went wrong'),
+      React.createElement('p', {
+        key: 'error-message',
+        style: {
+          fontSize: '1rem',
+          marginBottom: '30px',
+          opacity: 0.8,
+          maxWidth: '400px',
+          lineHeight: 1.5
+        }
+      }, error),
+      React.createElement('button', {
+        key: 'reload-button',
+        onClick: handleReloadClick,
+        style: {
+          padding: '12px 24px',
+          fontSize: '1rem',
+          fontWeight: 'bold',
+          backgroundColor: '#68D391',
+          color: '#1A202C',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease'
+        },
+        onMouseOver: (e) => {
+          e.target.style.backgroundColor = '#5BB585';
+          e.target.style.transform = 'translateY(-2px)';
+        },
+        onMouseOut: (e) => {
+          e.target.style.backgroundColor = '#68D391';
+          e.target.style.transform = 'translateY(0)';
+        }
+      }, 'Reload Game')
+    ]),
 
-    gameLoaded && isPauseVisible && React.createElement('div', { key: 'pause-button', style: { position: 'absolute', top: '10px', right: '10px', zIndex: 100 } }, [
-      React.createElement('style', { key: 'pause-button-styles' }, pauseButtonStyles),
-      React.createElement('label', { key: 'pause-label', className: 'container' }, [
-        React.createElement('input', { key: 'pause-input', type: 'checkbox', checked: isPaused, onChange: handlePauseToggle }),
-        React.createElement('svg', { key: 'play-svg', className: 'play', xmlns: 'http://www.w3.org/2000/svg', height: '1em', viewBox: '0 0 384 512' }, [
-          React.createElement('path', { key: 'play-path', d: 'M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z' })
+    // Control buttons (only show when game is loaded and pause button is visible) - ONLY PAUSE BUTTON
+    gameLoaded && isPauseVisible && React.createElement('div', {
+      key: 'controls',
+      style: {
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: 100,
+        display: 'flex',
+        gap: '15px',
+        alignItems: 'center'
+      }
+    }, [
+      // Only Pause/Resume button
+      React.createElement('div', {
+        key: 'pause-container',
+        className: 'container',
+        style: {
+          '--color': isPaused ? '#68D391' : '#F6AD55',
+          '--size': '20px',
+          padding: '12px',
+          backgroundColor: 'rgba(26, 32, 50, 0.9)',
+          borderRadius: '12px',
+          border: `2px solid ${isPaused ? '#68D391' : '#F6AD55'}`,
+          backdropFilter: 'blur(10px)',
+          transition: 'all 0.3s ease'
+        },
+        onClick: handlePauseToggle,
+        onMouseOver: (e) => {
+          e.target.style.transform = 'scale(1.1)';
+          e.target.style.backgroundColor = 'rgba(26, 32, 50, 1)';
+        },
+        onMouseOut: (e) => {
+          e.target.style.transform = 'scale(1)';
+          e.target.style.backgroundColor = 'rgba(26, 32, 50, 0.9)';
+        }
+      }, [
+        React.createElement('input', {
+          key: 'pause-input',
+          type: 'checkbox',
+          checked: isPaused
+        }),
+        React.createElement('svg', {
+          key: 'pause-svg',
+          className: 'pause',
+          viewBox: '0 0 24 24',
+          width: '20',
+          height: '20'
+        }, [
+          React.createElement('rect', { key: 'pause-1', x: '6', y: '4', width: '4', height: '16' }),
+          React.createElement('rect', { key: 'pause-2', x: '14', y: '4', width: '4', height: '16' })
         ]),
-        React.createElement('svg', { key: 'pause-svg', className: 'pause', xmlns: 'http://www.w3.org/2000/svg', height: '1em', viewBox: '0 0 320 512' }, [
-          React.createElement('path', { key: 'pause-path', d: 'M48 64C21.5 64 0 85.5 0 112V400c0 26.5 21.5 48 48 48H80c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H48zm192 0c-26.5 0-48 21.5-48 48V400c0 26.5 21.5 48 48 48h32c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H240z' })
+        React.createElement('svg', {
+          key: 'play-svg',
+          className: 'play',
+          viewBox: '0 0 24 24',
+          width: '20',
+          height: '20'
+        }, React.createElement('polygon', { key: 'play-poly', points: '5,3 19,12 5,21' }))
+      ])
+    ]),
+
+    // Pause overlay
+    isPaused && gameLoaded && React.createElement('div', {
+      key: 'pause-overlay',
+      style: {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'rgba(11, 20, 38, 0.85)', // Very dark blue overlay
+        zIndex: 50,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        color: '#E2E8F0',
+        backdropFilter: 'blur(8px)'
+      }
+    }, [
+      React.createElement('div', {
+        key: 'pause-content',
+        style: {
+          textAlign: 'center',
+          padding: '40px',
+          backgroundColor: 'rgba(26, 32, 50, 0.9)',
+          borderRadius: '20px',
+          border: '2px solid #68D391',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          maxWidth: '400px',
+          width: '90%'
+        }
+      }, [
+        React.createElement('div', {
+          key: 'pause-icon',
+          style: {
+            fontSize: '4rem',
+            marginBottom: '20px'
+          }
+        }, '⏸️'),
+        React.createElement('h2', {
+          key: 'pause-title',
+          style: {
+            fontSize: '2rem',
+            marginBottom: '15px',
+            color: '#68D391',
+            fontWeight: 'bold'
+          }
+        }, 'Game Paused'),
+        React.createElement('p', {
+          key: 'pause-message',
+          style: {
+            fontSize: '1.1rem',
+            marginBottom: '30px',
+            opacity: 0.8,
+            lineHeight: 1.5
+          }
+        }, 'Take a break! Click the pause button or press anywhere to continue your jetpack adventure.'),
+        React.createElement('button', {
+          key: 'resume-btn',
+          onClick: handlePauseToggle,
+          style: {
+            padding: '15px 30px',
+            fontSize: '1.1rem',
+            fontWeight: 'bold',
+            backgroundColor: '#68D391',
+            color: '#1A202C',
+            border: 'none',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            margin: '0 auto'
+          },
+          onMouseOver: (e) => {
+            e.target.style.backgroundColor = '#5BB585';
+            e.target.style.transform = 'translateY(-2px)';
+            e.target.style.boxShadow = '0 4px 12px rgba(104, 211, 145, 0.4)';
+          },
+          onMouseOut: (e) => {
+            e.target.style.backgroundColor = '#68D391';
+            e.target.style.transform = 'translateY(0)';
+            e.target.style.boxShadow = 'none';
+          }
+        }, [
+          React.createElement('span', { key: 'resume-icon' }, '▶️'),
+          React.createElement('span', { key: 'resume-text' }, 'Resume Game')
         ])
       ])
     ])
