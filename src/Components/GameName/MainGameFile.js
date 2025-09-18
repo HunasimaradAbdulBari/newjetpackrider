@@ -149,7 +149,7 @@ const MainGameFile = () => {
           gameState: 'PLAYING', isInvulnerable: false, invulnerabilityTimer: null, jetpackActive: false,
           jetpackFuel: 100, maxJetpackFuel: 100, fuelConsumptionRate: 0.8, fuelRechargeRate: 0.6,
           scrollSpeed: 200, normalScrollSpeed: 200, questionScrollSpeed: 200 / 1.1, hasStartedFlying: false,
-          hoverTargetY: 540, isHovering: false, player: null, background: null, jetpackParticles: [], hoverParticles: [],
+          hoverTargetY: 540, isHovering: false, groundY: 0, player: null, background: null, jetpackParticles: [], hoverParticles: [],
           questionCoins: [], heartIcons: [], scoreText: null, distanceText: null, progressText: null, questionText: null,
           questionContainer: null, questionNumberText: null, fuelBar: null, fuelBarBg: null, cursors: null, spaceKey: null,
           questions: [], currentQuestionElements: [], currentInstructionText: null, answerProcessed: false,
@@ -171,12 +171,13 @@ const MainGameFile = () => {
           this.scaleFactor = Math.min(gameWidth / baseWidth, gameHeight / baseHeight);
           this.scaleFactor = Math.max(0.5, Math.min(1.2, this.scaleFactor));
         }
+        this.groundY = gameHeight * 0.85;
         Object.assign(this, {
           lives: 3, score: 0, distance: 0, questionIndex: 0, obstaclesPassed: 0, correctAnswers: 0, wrongAnswers: 0,
           gameState: 'PLAYING', isInvulnerable: false, invulnerabilityTimer: null, jetpackActive: false, jetpackFuel: 100,
           jetpackParticles: [], hoverParticles: [], questionCoins: [], currentQuestionElements: [],
           currentInstructionText: null, answerProcessed: false, hasStartedFlying: false, isHovering: false,
-          hoverTargetY: 540, questionTimeout: null, nextQuestionDistance: 75, questionInterval: 30
+          hoverTargetY: this.groundY, questionTimeout: null, nextQuestionDistance: 75, questionInterval: 30
         });
         this.scrollSpeed = this.normalScrollSpeed;
         if (this.setPauseVisibilityCallback) this.setPauseVisibilityCallback(true);
@@ -254,13 +255,11 @@ const MainGameFile = () => {
 
       createRedesignedPlayer() {
         const playerX = this.sys.canvas.width * 0.1;
-        // FIXED: Start at ground level (85% down from top instead of 50%)
-        const playerY = this.sys.canvas.height * 0.85;
+        const playerY = this.groundY;
         this.player = this.physics.add.sprite(playerX, playerY, 'redesigned-jetpack-player');
         this.player.setCollideWorldBounds(true); this.player.setBounce(0.1); this.player.setScale(Math.max(0.6, 0.8 * this.scaleFactor));
         this.player.setSize(50, 65); this.player.setGravityY(0); this.player.setTint(0xFFFFFF);
-        // FIXED: Set initial hover target to D coin level (will be updated when coins spawn)
-        this.hoverTargetY = this.sys.canvas.height * 0.85;
+        this.hoverTargetY = this.groundY;
       }
 
       createRedesignedUI() {
@@ -310,7 +309,10 @@ const MainGameFile = () => {
         if ((this.spaceKey.isDown || this.jetpackActive) && (this.gameState === 'GAME_OVER' || this.gameState === 'RESULTS')) return;
 
         if (this.spaceKey.isDown || this.jetpackActive) {
-          if (!this.hasStartedFlying) this.hasStartedFlying = true;
+          if (!this.hasStartedFlying) {
+            this.hasStartedFlying = true;
+            this.hoverTargetY = this.sys.canvas.height * 0.75;
+          }
           if (this.jetpackFuel > 0) {
             this.isHovering = false; this.player.setVelocityY(-320);
             this.jetpackFuel = Math.max(0, this.jetpackFuel - this.fuelConsumptionRate);
@@ -325,7 +327,10 @@ const MainGameFile = () => {
               this.player.setVelocityY(0); this.createHoverParticles(); this.createContinuousFireEffect();
               if (Math.random() < 0.1) this.player.y += Math.sin(this.time.now * 0.005) * 0.5;
             }
-          } else this.player.setVelocityY(80);
+          } else {
+            this.player.setVelocityY(0);
+            this.player.y = this.groundY;
+          }
           this.jetpackFuel = Math.min(this.maxJetpackFuel, this.jetpackFuel + this.fuelRechargeRate);
           this.player.rotation = Math.min(0.3, this.player.body.velocity.y * 0.001); this.player.setTint(0xFFFFFF);
         }
@@ -487,7 +492,7 @@ const MainGameFile = () => {
           this.tweens.add({ targets: coinSprite, scaleX: Math.max(0.9, 1.2 * this.scaleFactor), scaleY: Math.max(0.9, 1.2 * this.scaleFactor), duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
         }
         
-        // CRITICAL FIX: Set hover target to D coin level (lowest coin position)
+        // FIXED: Set hover target to D coin level (lowest coin position)
         const dCoinY = baseY + staircaseOffsets[3].y; // Index 3 is D coin
         this.hoverTargetY = Math.max(80, Math.min(this.sys.canvas.height - 80, dCoinY));
         
@@ -499,33 +504,30 @@ const MainGameFile = () => {
         const dt = this.game.loop.delta / 1000;
         this.questionCoins.forEach(coin => {
           if (!coin.isActive) return; coin.sprite.x += coin.speed * dt; coin.label.x += coin.speed * dt;
-          if (coin.sprite.x < 50) { this.animateAllCoinsDisappear(); return; }
+          // FIXED: Increased disappear threshold from -50 to -200 for more collision time
+          if (coin.sprite.x < -200) { this.animateAllCoinsDisappear(); return; }
         });
       }
 
-      // CRITICAL FIX: Replace faulty getBounds() collision with direct coordinate collision
       checkCoinCollisions() {
         if (this.gameState !== 'QUESTION_ACTIVE' || !this.player || this.answerProcessed) return;
         
-        // Use direct coordinates instead of getBounds()
         const playerX = this.player.x;
         const playerY = this.player.y;
-        const playerWidth = 40 * this.player.scaleX; // Player hitbox width
-        const playerHeight = 50 * this.player.scaleY; // Player hitbox height
+        const playerWidth = 40 * this.player.scaleX;
+        const playerHeight = 50 * this.player.scaleY;
         
         this.questionCoins.forEach((coin, index) => {
           if (!coin.isActive) return;
           
           const coinX = coin.sprite.x;
           const coinY = coin.sprite.y;
-          const coinRadius = 25 * coin.sprite.scaleX; // Coin radius including scale
+          const coinRadius = 25 * coin.sprite.scaleX;
           
-          // Distance-based collision detection (more reliable)
           const distanceX = Math.abs(playerX - coinX);
           const distanceY = Math.abs(playerY - coinY);
           const collisionDistance = (playerWidth / 2) + coinRadius;
           
-          // Check if collision occurred
           if (distanceX < collisionDistance && distanceY < collisionDistance) {
             this.selectCoinAnswer(index);
             return;
@@ -748,7 +750,7 @@ const MainGameFile = () => {
     ]),
     
     error && React.createElement('div', { key: 'error', style: { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'linear-gradient(135deg, #1A202C, #2D3748)', zIndex: 1000, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: '#E2E8F0', padding: '20px', textAlign: 'center' } }, [
-      React.createElement('svg', { key: 'error-icon', width: '64', height: '64', viewBox: '0 0 24 24', fill: '#F56565', style: { marginBottom: '20px' } }, React.createElement('path', { d: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z' })),
+      React.createElement('svg', { key: 'error-icon', width: '64', height: '64', viewBox: '0 24 24', fill: '#F56565', style: { marginBottom: '20px' } }, React.createElement('path', { d: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z' })),
       React.createElement('h2', { key: 'error-title', style: { fontSize: '1.5rem', marginBottom: '15px', color: '#F56565' } }, 'Oops! Something went wrong'),
       React.createElement('p', { key: 'error-message', style: { fontSize: '1rem', marginBottom: '30px', opacity: 0.8, maxWidth: '400px', lineHeight: 1.5 } }, error),
       React.createElement('button', { key: 'reload-button', onClick: handleReloadClick, style: { padding: '12px 24px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#68D391', color: '#1A202C', border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.3s ease' }, onMouseOver: (e) => { e.target.style.backgroundColor = '#5BB585'; e.target.style.transform = 'translateY(-2px)'; }, onMouseOut: (e) => { e.target.style.backgroundColor = '#68D391'; e.target.style.transform = 'translateY(0)'; } }, 'Reload Game')
@@ -777,3 +779,4 @@ const MainGameFile = () => {
 };
 
 export default MainGameFile;
+
